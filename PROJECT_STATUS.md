@@ -27,7 +27,7 @@ The single critical gap is the **Solidity vault smart contract**, which is the p
 | Product & UX | 100% | ✅ Complete |
 | Frontend | 100% | ✅ Complete |
 | AI & Data Layer | 100% | ✅ Complete |
-| Documentation | 85% | ✅ Complete |
+| Documentation | 100% | ✅ Complete |
 | Smart Contract | 0% | ❌ Not Started |
 | Contract Integration | 0% | ❌ Blocked |
 | Hosted Deployment | 90% | ✅ In Progress |
@@ -39,7 +39,7 @@ The single critical gap is the **Solidity vault smart contract**, which is the p
 
 ### Positioning Statement
 
-> An AI-powered DeFi navigation dapp on Polkadot Hub that helps users discover, understand, and execute DeFi strategies through a Solidity-based smart contract vault.
+> An AI-powered DeFi navigation dapp on Polkadot Hub that helps users discover, understand, and execute DeFi strategies through a vault flow designed for a forthcoming Solidity smart contract.
 
 ### Core MVP Flow
 
@@ -54,7 +54,7 @@ The single critical gap is the **Solidity vault smart contract**, which is the p
 
 ### Why This Matters for Judges
 
-- Real use of Solidity smart contracts on Polkadot Hub
+- Clear Solidity smart contract execution path on Polkadot Hub
 - Clear DeFi use case (staking, yield, lending)
 - Meaningful AI layer tied to product actions, not just a chat UI
 - Clean, polished product experience
@@ -186,21 +186,25 @@ User Input → Grounded Prompt Builder → Qwen Model Routing → Structured Val
 
 | Document | Lines | Content |
 |---|---|---|
-| `PRD.md` | 348 | Product vision, problem statement, solution, 6 core features, technical architecture, security, roadmap, demo plan, success metrics |
-| `ROADMAP.md` | 827 | Execution plan, scope freeze, 5 workstreams with tasks/deliverables/done criteria, daily timeline (Mar 11–25), priority order, critical path, risk register, submission checklist |
-| `README.md` | 723 | Professional banner, badges, overview, features table, demo flow diagram, 4-layer architecture diagram, tech stack, project structure, data models, design system, AI engine docs, strategy dataset, setup guide, deployment guide, roadmap, hackathon alignment, contributing guide |
+| `PRD.md` | 347 | Product vision, problem statement, solution, 6 core features, technical architecture, security, roadmap, demo plan, success metrics |
+| `ROADMAP.md` | 826 | Execution plan, scope freeze, 5 workstreams with tasks/deliverables/done criteria, daily timeline (Mar 11–25), priority order, critical path, risk register, submission checklist |
+| `README.md` | 768 | Professional banner, badges, overview, features table, demo flow diagram, 4-layer architecture diagram, live Qwen runtime docs, project structure, data models, design system, setup guide, Vercel deployment guide, roadmap, hackathon alignment, contributing guide |
 | `LICENSE` | 21 | MIT License |
 
 ### 3.10 Git History
 
 ```
-bd2470c (HEAD -> main) Redesign README with professional architecture docs, diagrams, and MIT license
+714387b (HEAD -> main) Complete AI runtime grounding and health checks
+59c27ae Complete frontend polish and state fixes
+8db0516 Polish wallet session flow and UX copy
+d868803 Add Vercel AI endpoints
+83b08a3 Add live Qwen assistant with model fallback
+f86444c Add comprehensive project status report
+bd2470c Redesign README with professional architecture docs, diagrams, and MIT license
 b0dfe3f Expand README with architecture and roadmap details
-6551b10 Document project architecture
-73fd416 Build DotPilot MVP flow and landing page
 ```
 
-> **Note:** Only 4 commits. The ROADMAP recommends showing active development history for judges. More granular commits should be made during the remaining work.
+> **Note:** Commit history now reflects active hackathon iteration across AI runtime, deployment, frontend polish, and documentation.
 
 ---
 
@@ -210,7 +214,7 @@ b0dfe3f Expand README with architecture and roadmap details
 
 **Priority:** 🔴 Must-have  
 **Estimated effort:** 1–2 days  
-**Status:** Not started
+**Status:** In progress
 
 This is the **primary requirement** for Track 1 (EVM Smart Contract). Without it, the project does not qualify for the hackathon track.
 
@@ -281,9 +285,10 @@ This is the **primary requirement** for Track 1 (EVM Smart Contract). Without it
 
 From ROADMAP: *"The project must be testable via hosted deployment or local setup instructions."*
 
-- [ ] Deploy frontend to Vercel (or Netlify / Cloudflare Pages)
-- [ ] Verify all flows work in deployed version
-- [ ] Include deployment URL in README and submission
+- [x] Add Vercel serverless runtime and deployment config
+- [x] Launch hosted frontend preview
+- [ ] Verify the latest production flow end-to-end in hosted mode
+- [ ] Include the final deployment URL in submission materials
 
 ### 4.5 Demo Video — IMPORTANT
 
@@ -318,7 +323,7 @@ From PRD Section 13 and ROADMAP Section 9.5:
 | Demo wallet address | Hardcoded address is too short (not valid 40 hex chars) | ✅ Fixed |
 | Unused exports | `vaultPositions`, `aiResponses`, `initialMessages` in `mockData.ts` not used | ✅ Fixed |
 | SEO | `index.html` missing meta description | ✅ Fixed |
-| Commit history | Only 4 commits; more granular commits recommended | Ongoing |
+| Commit history | Active iteration history now visible across AI, deployment, frontend, and docs work | ✅ Improved |
 
 ---
 
@@ -363,8 +368,8 @@ From PRD Section 13 and ROADMAP Section 9.5:
 |---|---|---|
 | 1 | Public GitHub repository | ✅ github.com/panzauto46-bot/DotPilot |
 | 2 | Project description | ✅ README with professional documentation |
-| 3 | Clean README with setup instructions | ✅ 723 lines with architecture diagrams |
-| 4 | Hosted frontend or local install guide | ⚠️ Local guide ✅ / Hosted ❌ |
+| 3 | Clean README with setup instructions | ✅ 768 lines with architecture diagrams and deployment docs |
+| 4 | Hosted frontend or local install guide | ⚠️ Local guide ✅ / Hosted preview ✅ / Final hosted QA pending |
 | 5 | Demo video or screenshots | ❌ Not created |
 | 6 | Contract address | ❌ No contract deployed |
 
@@ -387,7 +392,7 @@ From PRD Section 13 and ROADMAP Section 9.5:
 | 14 | All links open correctly | ✅ |
 | 15 | Build command works | ✅ |
 
-**Current score: 5 of 11 required/recommended items completed.**
+**Current score: 5 of 11 required/recommended items completed, with hosted preview and deployment docs now in place.**
 
 ---
 
@@ -399,9 +404,9 @@ DotPilot is ready for submission when **all** of the following are true:
 |---|---|---|
 | 1 | Project clearly fits Track 1 — EVM Smart Contract | ❌ No contract |
 | 2 | Repository is public and open-source | ✅ |
-| 3 | Commit history reflects active hackathon work | ⚠️ Only 4 commits |
+| 3 | Commit history reflects active hackathon work | ✅ |
 | 4 | App can run locally from the README | ✅ |
-| 5 | A hosted version is available | ❌ |
+| 5 | A hosted version is available | ⚠️ Preview deployed; final verification pending |
 | 6 | Wallet connection works | ✅ |
 | 7 | User can view strategies | ✅ |
 | 8 | AI assistant can recommend at least one usable strategy | ✅ |
@@ -409,7 +414,7 @@ DotPilot is ready for submission when **all** of the following are true:
 | 10 | Project can be shown in a clean 2–3 minute demo | ⚠️ Incomplete without contract |
 | 11 | Demo video and screenshots are prepared | ❌ |
 
-**Score: 5 of 11 requirements met.**
+**Score: 6 of 11 requirements met.**
 
 ---
 
@@ -512,23 +517,34 @@ Integration Proof    Documentation
 
 ```
 DotPilot/
-├── index.html              342 B     Entry HTML
-├── package.json            686 B     Dependencies and scripts
+├── index.html              541 B     Entry HTML
+├── package.json            844 B     Dependencies and scripts
 ├── tsconfig.json           681 B     TypeScript config (strict mode)
-├── vite.config.ts          538 B     Vite + Tailwind + SingleFile plugin
+├── vite.config.ts          669 B     Vite + Tailwind + SingleFile plugin
 ├── .gitignore              90 B      Git ignore rules
-├── LICENSE                 1.1 KB    MIT License
+├── LICENSE                 1.0 KB    MIT License
 ├── PRD.md                  9.0 KB    Product Requirements Document
 ├── ROADMAP.md              18.9 KB   Hackathon execution roadmap
-├── README.md               26.8 KB   Professional project documentation
-├── PROJECT_STATUS.md       —         This file
+├── README.md               29.7 KB   Professional project documentation
+├── PROJECT_STATUS.md       25.2 KB   This file
+├── .env.example            284 B     AI runtime environment variable template
+├── vercel.json             74 B      Vercel function runtime config
 ├── docs/
 │   └── images/
 │       ├── banner.png      428 KB    Project banner
 │       ├── system-architecture.png  442 KB  4-layer architecture diagram
 │       └── user-flow.png   355 KB    6-step user flow diagram
 ├── dist/
-│   └── index.html          720 KB    Production build (single file)
+│   └── index.html          726 KB    Production build (single file)
+├── api/
+│   ├── assistant.mjs       1.3 KB    Vercel live AI endpoint
+│   └── health.mjs          515 B     Vercel AI health endpoint
+├── lib/
+│   └── assistant-runtime.mjs  10.4 KB Shared Qwen routing and validation
+├── scripts/
+│   └── dev.mjs             730 B     Local concurrent dev runner
+├── server/
+│   └── index.mjs           3.1 KB    Local Node runtime and API server
 └── src/
     ├── main.tsx            234 B     React entry point
     ├── App.tsx             12.0 KB   App orchestrator
@@ -545,8 +561,11 @@ DotPilot/
     │   ├── VaultPage.tsx    21.3 KB
     │   └── WalletModal.tsx  4.5 KB
     ├── data/
-    │   └── mockData.ts     7.5 KB    Curated mock data
+    │   └── mockData.ts     3.4 KB    Curated mock data
+    ├── services/
+    │   └── assistant.ts    1.7 KB    AI client request helpers
     └── utils/
+        ├── assistantFallback.ts  4.6 KB Local deterministic AI fallback
         ├── cn.ts           169 B     Class name utility
         └── portfolio.ts    1.3 KB    Portfolio calculation helpers
 ```

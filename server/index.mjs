@@ -47,7 +47,10 @@ const server = createServer(async (request, response) => {
   const host = request.headers.host || 'localhost';
   const url = new URL(request.url || '/', `http://${host}`);
 
-  if (request.method === 'GET' && url.pathname === '/health') {
+  if (
+    request.method === 'GET' &&
+    (url.pathname === '/health' || url.pathname === '/api/health')
+  ) {
     sendJson(response, 200, {
       ok: true,
       apiConfigured: Boolean(process.env.DASHSCOPE_API_KEY),

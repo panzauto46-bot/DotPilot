@@ -39,7 +39,7 @@
 
 **DotPilot** is an AI-powered DeFi navigation dapp built for the **Polkadot Solidity Hackathon** on [DoraHacks](https://dorahacks.io).
 
-Instead of forcing users to jump between fragmented DeFi tools, DotPilot combines **strategy discovery**, **AI-guided recommendations**, and a **vault execution flow** into one polished product experience — all built on **Polkadot Hub** using EVM-compatible **Solidity smart contracts**.
+Instead of forcing users to jump between fragmented DeFi tools, DotPilot combines **strategy discovery**, **AI-guided recommendations**, and a **vault execution flow** into one polished product experience. The current MVP already ships a production-ready frontend, live AI runtime, and hosted deployment path, while the Solidity vault contract remains the main work in progress for the hackathon submission.
 
 ### The Problem
 
@@ -76,7 +76,7 @@ Connect via **MetaMask** or use the **Demo Wallet** for the hackathon flow. Wall
     <td width="50%">
 
 ### 🤖 AI DeFi Assistant
-Ask questions like *"Where should I stake my DOT?"* and receive **grounded recommendations** tied to real strategies shown in the app. The assistant routes you directly into the vault flow.
+Ask questions like *"Where should I stake my DOT?"* and receive **grounded recommendations** tied to real strategies shown in the app. The assistant uses live **Qwen** inference when available and falls back to an in-app recommender if the AI runtime is unavailable.
 
 </td>
   </tr>
@@ -84,7 +84,7 @@ Ask questions like *"Where should I stake my DOT?"* and receive **grounded recom
     <td width="50%">
 
 ### 🏦 Smart Vault
-Deposit and withdraw assets through a **Solidity-based vault contract**. The vault is the core execution layer — where intent becomes on-chain action.
+Use a vault-ready deposit and withdraw flow that mirrors the intended product UX. The current MVP simulates vault actions in-app while the Solidity contract and on-chain execution layer are still being implemented.
 
 </td>
     <td width="50%">
@@ -204,33 +204,33 @@ Key responsibilities:
 Powers the AI recommendation engine with grounded, actionable outputs.
 
 ```
-User Input ──► Keyword Analysis ──► Strategy Matching ──► Risk Context
-                                          │
-                                          ▼
-                                   Curated Dataset
-                                   (8 strategies)
-                                          │
-                                          ▼
-                              Contextual Response Builder
-                              ├── Portfolio-aware amounts
-                              ├── Risk explanations
-                              └── CTA with strategy routing
+User Input ──► Grounded Prompt Builder ──► Qwen Model Routing
+                                                │
+                                                ▼
+                                        Structured Validation
+                                                │
+                                                ▼
+                                       Strategy CTA Response
+                                                │
+                                                ▼
+                                      Deterministic Local Fallback
 ```
 
 The AI assistant:
-- Matches user intent through **keyword analysis** (staking, yield, passive income, risk)
-- Selects the **best strategy** based on APY and risk profile
-- Generates **portfolio-aware** recommendations when wallet is connected
-- Provides a **direct CTA** that routes into the vault flow
+- Uses **DashScope/Qwen** through `/api/assistant`
+- Tries a configurable **model fallback chain** when quotas or model access fail
+- Validates `strategyId` values against the in-app strategy dataset
+- Recovers a strategy CTA from protocol mentions if model output is imperfect
+- Falls back to a deterministic local recommender if live AI is unavailable
 
 #### 4. Blockchain Layer
 
-Handles on-chain interactions via EVM-compatible smart contracts.
+Represents the planned execution boundary for EVM-compatible smart contracts.
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌────────────────┐
 │   MetaMask  │────►│   Vault Contract │────►│  Polkadot Hub  │
-│   Provider  │     │   (Solidity)     │     │  (EVM Chain)   │
+│   Provider  │     │   (Planned)      │     │  (EVM Chain)   │
 └─────────────┘     │                  │     └────────────────┘
                     │  • deposit()     │
                     │  • withdraw()    │
@@ -282,7 +282,9 @@ dotpilot/
 ├── 📄 index.html                    # Entry HTML with meta tags
 ├── 📄 package.json                  # Dependencies and scripts
 ├── 📄 tsconfig.json                 # TypeScript configuration (strict mode)
-├── 📄 vite.config.ts                # Vite + Tailwind + SingleFile plugin
+├── 📄 vite.config.ts                # Vite + Tailwind + SingleFile plugin + API proxy
+├── 📄 vercel.json                   # Vercel function runtime config
+├── 📄 .env.example                  # Example AI runtime environment variables
 ├── 📄 .gitignore                    # Git ignore rules
 │
 ├── 📘 PRD.md                        # Product Requirements Document
@@ -297,6 +299,19 @@ dotpilot/
 │
 ├── 📁 dist/                         # Production build output
 │   └── index.html                   # Single-file production bundle
+│
+├── 📁 api/                          # Vercel serverless endpoints
+│   ├── assistant.mjs                # Live AI chat handler
+│   └── health.mjs                   # AI runtime readiness check
+│
+├── 📁 lib/
+│   └── assistant-runtime.mjs        # Shared Qwen routing, validation, failover logic
+│
+├── 📁 scripts/
+│   └── dev.mjs                      # Runs frontend and local AI server together
+│
+├── 📁 server/
+│   └── index.mjs                    # Local Node runtime for production preview and AI API
 │
 └── 📁 src/                          # Application source code
     │
@@ -317,9 +332,13 @@ dotpilot/
     │   └── WalletModal.tsx          # Wallet connection modal
     │
     ├── 📁 data/                     # Mock and curated data
-    │   └── mockData.ts             # Tokens, strategies, history, AI templates
+    │   └── mockData.ts              # Tokens, strategies, portfolio history, seed chat
+    │
+    ├── 📁 services/
+    │   └── assistant.ts             # Client requests for AI reply + health status
     │
     └── 📁 utils/                    # Reusable helper functions
+        ├── assistantFallback.ts     # Deterministic local AI fallback
         ├── cn.ts                    # clsx + tailwind-merge utility
         └── portfolio.ts             # Asset pricing, USD conversion, formatting
 ```
@@ -454,34 +473,32 @@ The design system includes **16 custom animations** for a premium, motion-heavy 
 
 ## 🧠 AI Recommendation Engine
 
-The AI assistant is **not a generic chatbot** — it's a recommendation engine grounded in the same strategy data visible in the app.
+The AI assistant is **not a generic chatbot** — it is a grounded strategy engine backed by live Qwen inference, structured validation, and a deterministic local fallback.
 
 ### How It Works
 
 ```mermaid
 flowchart LR
-    A[User Input] --> B{Keyword Analysis}
-    B -->|stake, staking| C[pickBestLowRiskStaking]
-    B -->|yield, best, apy| D[pickBestYield]
-    B -->|passive, income, safe| E[pickBalancedOpportunity]
-    B -->|other| F[Fallback Recommendation]
-    C --> G[Build Contextual Response]
-    D --> G
-    E --> G
-    F --> G
-    G --> H{Wallet Connected?}
-    H -->|Yes| I["Portfolio-aware reply + 'Open strategy' CTA"]
-    H -->|No| J["General reply + 'Connect wallet' CTA"]
+    A[User Input] --> B[Grounded Prompt Builder]
+    B --> C[Qwen Model Routing]
+    C --> D[Structured JSON Validation]
+    D --> E[Strategy ID Recovery]
+    E --> F{Live AI Available?}
+    F -->|Yes| G["Live reply + strategy CTA"]
+    F -->|No| H["Deterministic local fallback"]
+    G --> I[Vault handoff]
+    H --> I
 ```
 
-### Strategy Selection Logic
+### Runtime Capabilities
 
-| Intent | Selection Method | Example Output |
+| Capability | Current Behavior | Result |
 |---|---|---|
-| **Staking** | Highest APY among `Low` risk staking | Bifrost Liquid Staking (16.1% APY) |
-| **Best yield** | Highest APY across all strategies | Stellaswap GLMR/DOT Farm (35.8% APY) |
-| **Passive income** | Highest APY among recommended strategies | Hydration DOT/USDT LP (22.3% APY) |
-| **Default** | Best recommended strategy | Context-aware fallback |
+| Live AI inference | Calls DashScope/Qwen via `/api/assistant` | Real model-backed replies |
+| Model failover | Tries multiple configured models in order | Automatic quota/rate fallback |
+| Structured grounding | Validates `strategyId` against the dataset | CTA stays attached to real strategies |
+| Protocol recovery | Infers `strategyId` from protocol names in content | Handles imperfect model JSON |
+| Local fallback | Uses in-app recommender when live AI is down | Assistant still remains usable |
 
 ### Key Design Decisions
 
@@ -489,6 +506,7 @@ flowchart LR
 2. **Actionable CTAs** — every recommendation includes a button to continue the flow
 3. **Context awareness** — responses change based on wallet connection state
 4. **Portfolio-aware** — when connected, responses reference the user's portfolio value
+5. **Health-checked runtime** — the UI reads `/api/health` so the badge reflects real AI readiness
 
 ---
 
@@ -542,20 +560,31 @@ cd DotPilot
 
 # Install dependencies
 npm install
+
+# Copy AI runtime env vars
+cp .env.example .env
 ```
+
+Set `DASHSCOPE_API_KEY` in `.env` if you want live Qwen responses locally. Without it, the assistant still works through the deterministic local fallback.
 
 ### Development
 
 ```bash
-# Start the development server
+# Start frontend + local AI runtime together
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173`.
+This starts:
+
+- frontend at `http://localhost:5173`
+- local AI runtime at `http://localhost:8787`
 
 ```bash
-# Start with network access (for mobile testing)
-npm run dev -- --host 0.0.0.0
+# Start only the frontend dev server
+npm run dev:web
+
+# Start only the local AI runtime
+npm run dev:api
 ```
 
 ### Build & Verification
@@ -567,8 +596,8 @@ npm run dev -- --host 0.0.0.0
 # Build for production
 npm run build
 
-# Preview the production build
-npm run preview
+# Serve the built app with the local Node runtime
+npm run start
 ```
 
 ### Build Output
@@ -579,7 +608,7 @@ The production build generates a **single HTML file** at `dist/index.html` (~720
 
 ## 🌐 Deployment
 
-DotPilot is optimized for deployment on **Vercel** as a static Vite frontend.
+DotPilot is optimized for deployment on **Vercel** using a static Vite build plus **serverless AI endpoints**.
 
 ### Deploy to Vercel
 
@@ -588,15 +617,30 @@ DotPilot is optimized for deployment on **Vercel** as a static Vite frontend.
 3. Use default Vite build settings:
    - **Build Command:** `npm run build`
    - **Output Directory:** `dist`
-4. Deploy
+4. Add these environment variables in Vercel:
+   - `DASHSCOPE_API_KEY`
+   - `DASHSCOPE_BASE_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1`
+   - `DASHSCOPE_MODEL_FALLBACKS=qwen-plus,qwen-plus-latest,qwen-turbo,qwen-turbo-latest,qwen-flash,qwen3.5-plus,qwen3-32b,qwen3-14b,qwen3-8b,qwen-max`
+5. Deploy
+
+### AI Runtime Endpoints
+
+The hosted app expects these endpoints:
+
+- `POST /api/assistant` — live grounded Qwen reply
+- `GET /api/health` — runtime readiness and model chain
+
+For local Node usage, `server/index.mjs` serves the same assistant API and exposes both `/health` and `/api/health` for parity.
 
 ### Alternative: Static Hosting
 
-Since the build produces a single HTML file, you can also host it on:
+Since the build produces a single HTML file, you can also host the frontend on:
 
 - **GitHub Pages** — serve `dist/index.html` directly
 - **IPFS** — upload the single file for decentralized hosting
 - **Any static CDN** — Cloudflare Pages, Netlify, etc.
+
+If you choose static-only hosting, the live AI endpoints must be hosted separately or the app will use the deterministic fallback in the UI.
 
 ---
 
@@ -628,7 +672,8 @@ Since the build produces a single HTML file, you can also host it on:
 
 ### 📦 Phase 3 — Submission & Demo (Upcoming)
 
-- [ ] Hosted deployment (Vercel)
+- [x] Hosted deployment scaffolding (Vercel + serverless AI endpoints)
+- [ ] Final hosted flow verification
 - [ ] Demo video recording
 - [ ] Pitch deck preparation
 - [ ] Repository cleanup and final polish
@@ -659,7 +704,7 @@ Since the build produces a single HTML file, you can also host it on:
 
 ### Why DotPilot Fits This Hackathon
 
-1. **Real Solidity usage** — vault contract is the core execution layer
+1. **Planned Solidity usage** — vault contract is the core execution layer being completed next
 2. **Polkadot Hub native** — designed specifically for the Polkadot ecosystem
 3. **Clear DeFi use case** — staking, yield, and portfolio management
 4. **Meaningful AI layer** — recommendations tied to product actions, not just a chat UI
@@ -670,7 +715,7 @@ Since the build produces a single HTML file, you can also host it on:
 After reviewing DotPilot, the following should be clearly evident:
 
 - ✅ The product solves a real problem in DeFi navigation
-- ✅ Solidity smart contracts power the core flow
+- ⚠️ Smart contract execution is the remaining core implementation gap
 - ✅ The AI adds genuine product value
 - ✅ The interface is polished and usable
 - ✅ The architecture is clean and extensible
