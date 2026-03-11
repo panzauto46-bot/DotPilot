@@ -87,16 +87,15 @@ export function LandingPage({
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-dot-pink/20 bg-dot-pink/10 px-3 py-1 text-xs font-medium text-dot-pink">
               <Sparkles size={14} />
-              AI-powered DeFi navigator for Polkadot Hub
+              AI-powered DeFi navigation on Polkadot Hub EVM
             </div>
 
             <div className="space-y-4">
               <h1 className="max-w-3xl text-4xl font-black tracking-tight text-white sm:text-5xl xl:text-6xl">
-                Navigate yield with a living interface, not a static dashboard.
+                AI-Powered DeFi Navigation on Polkadot Hub EVM
               </h1>
               <p className="max-w-2xl text-base leading-7 text-surface-200 sm:text-lg">
-                DotPilot combines strategy discovery, AI guidance, and a vault execution flow into
-                one polished product experience built for the Polkadot Solidity Hackathon.
+                Live contract-backed deposit and withdraw, guided by AI strategy recommendations.
               </p>
             </div>
 
@@ -169,7 +168,7 @@ export function LandingPage({
                   </div>
                   <div className="landing-metric">
                     <span className="text-[11px] uppercase tracking-[0.24em] text-surface-400">Target</span>
-                    <strong className="mt-2 block text-lg text-white">Polkadot Hub</strong>
+                    <strong className="mt-2 block text-lg text-white">Polkadot Hub EVM</strong>
                   </div>
                 </div>
 
