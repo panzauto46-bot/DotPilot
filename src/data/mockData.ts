@@ -1,4 +1,4 @@
-import { Token, DefiOpportunity, VaultPosition, PortfolioHistory, ChatMessage } from '../types';
+import { Token, DefiOpportunity, PortfolioHistory } from '../types';
 
 export const tokens: Token[] = [
   { symbol: 'DOT', name: 'Polkadot', balance: 1250.5, value: 8750.35, change24h: 3.2, icon: '◉', color: '#E6007A' },
@@ -100,45 +100,6 @@ export const defiOpportunities: DefiOpportunity[] = [
   },
 ];
 
-export const vaultPositions: VaultPosition[] = [
-  {
-    id: '1',
-    strategyId: '1',
-    strategy: 'DOT Native Staking',
-    asset: 'DOT',
-    baseAsset: 'DOT',
-    deposited: 500,
-    currentValue: 535.2,
-    apy: 14.5,
-    rewards: 35.2,
-    status: 'Active',
-  },
-  {
-    id: '2',
-    strategyId: '2',
-    strategy: 'DOT/USDT LP',
-    asset: 'DOT/USDT',
-    baseAsset: 'DOT',
-    deposited: 1200,
-    currentValue: 1342.8,
-    apy: 22.3,
-    rewards: 142.8,
-    status: 'Active',
-  },
-  {
-    id: '3',
-    strategyId: '4',
-    strategy: 'Acala DOT Lending',
-    asset: 'DOT',
-    baseAsset: 'DOT',
-    deposited: 300,
-    currentValue: 312.3,
-    apy: 8.2,
-    rewards: 12.3,
-    status: 'Active',
-  },
-];
-
 export const portfolioHistory: PortfolioHistory[] = [
   { date: 'Jan', value: 12500 },
   { date: 'Feb', value: 13200 },
@@ -152,23 +113,4 @@ export const portfolioHistory: PortfolioHistory[] = [
   { date: 'Oct', value: 16800 },
   { date: 'Nov', value: 17500 },
   { date: 'Dec', value: 17890 },
-];
-
-export const aiResponses: Record<string, string> = {
-  stake: `Based on my analysis of current market conditions, here are the **top DOT staking opportunities**:\n\n🥇 **Bifrost Liquid Staking** – 16.1% APY\n• Receive vDOT while earning rewards\n• Maintain liquidity for other DeFi activities\n• Risk Level: Low\n\n🥈 **Polkadot Hub Native Staking** – 14.5% APY\n• Most secure option with direct network validation\n• 28-day unbonding period\n• Risk Level: Low\n\n🥉 **Astar dApp Staking** – 12.8% APY\n• Support ecosystem dApps while earning\n• Flexible unstaking\n• Risk Level: Low\n\n**My Recommendation:** For your portfolio of 1,250 DOT, I suggest splitting:\n• 60% → Bifrost Liquid Staking (maximize yield + liquidity)\n• 40% → Native Staking (maximum security)\n\nEstimated annual earnings: **~$1,330**\n\nWould you like me to execute this strategy?`,
-
-  yield: `Here are today's **best yield opportunities** in the Polkadot ecosystem:\n\n📊 **Top Yields by Risk Level:**\n\n**Low Risk:**\n• Bifrost vDOT Staking → 16.1% APY\n• Polkadot Hub Staking → 14.5% APY\n• Acala DOT Lending → 8.2% APY\n\n**Medium Risk:**\n• Hydration DOT/USDT LP → 22.3% APY\n• Moonwell GLMR Lending → 11.4% APY\n\n**High Risk:**\n• Stellaswap GLMR/DOT Farm → 35.8% APY\n• Zenlink ASTR/USDT Farm → 28.5% APY\n\n⚡ **AI Insight:** Given your current portfolio allocation, I recommend the Hydration DOT/USDT pool. It offers strong yields with moderate risk and high liquidity.\n\nShall I prepare a deposit transaction?`,
-
-  passive: `Great question! Here's how you can earn **passive income** in the Polkadot ecosystem:\n\n💰 **Strategy 1: Conservative (Est. 12-15% APY)**\nStake DOT natively and lend stablecoins on Acala.\n• Expected monthly income: ~$145\n• Risk: Very Low\n\n💰 **Strategy 2: Balanced (Est. 18-22% APY)**\nCombine liquid staking with LP positions.\n• Expected monthly income: ~$280\n• Risk: Low-Medium\n\n💰 **Strategy 3: Growth (Est. 25-35% APY)**\nAggressive yield farming across multiple protocols.\n• Expected monthly income: ~$420\n• Risk: Medium-High\n\n🎯 **Personalized Recommendation:**\nBased on your $17,890 portfolio, I recommend **Strategy 2** for optimal risk-adjusted returns.\n\nWant me to set up an automated strategy?`,
-
-  default: `I'm DotPilot, your AI DeFi navigator for the Polkadot ecosystem! 🚀\n\nI can help you with:\n\n• **Staking** – Find the best staking opportunities for DOT and other assets\n• **Yield Farming** – Discover high-yield farming strategies\n• **Portfolio Analysis** – Optimize your asset allocation\n• **Risk Assessment** – Understand the risks of different DeFi strategies\n• **Strategy Execution** – Execute DeFi strategies directly\n\nTry asking me:\n• "Where should I stake my DOT?"\n• "What are the best yield opportunities today?"\n• "How can I earn passive income?"\n\nHow can I help you today?`,
-};
-
-export const initialMessages: ChatMessage[] = [
-  {
-    id: '0',
-    role: 'assistant',
-    content: `Welcome to **DotPilot**.\n\nI can help you compare Polkadot ecosystem strategies, explain risk levels, and guide you into the vault flow when you're ready to act.\n\nAsk about staking, yield opportunities, or passive income to get started.`,
-    timestamp: new Date(),
-  },
 ];

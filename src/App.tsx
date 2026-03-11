@@ -132,6 +132,20 @@ function loadPersistedActivity() {
     .filter((item) => !Number.isNaN(item.timestamp.getTime()));
 }
 
+function getReferenceTokenPrice(symbol: string, tokens: Token[]) {
+  const currentToken = tokens.find((token) => token.symbol === symbol);
+  if (currentToken && currentToken.balance > 0) {
+    return currentToken.value / currentToken.balance;
+  }
+
+  const seededToken = initialTokens.find((token) => token.symbol === symbol);
+  if (seededToken && seededToken.balance > 0) {
+    return seededToken.value / seededToken.balance;
+  }
+
+  return 0;
+}
+
 export function App() {
   const [currentPage, setCurrentPage] = useState<Page>(loadPersistedPage);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(loadPersistedSidebarState);
@@ -326,7 +340,7 @@ export function App() {
     }
 
     const nextBalance = sourceToken.balance - amount;
-    const pricePerUnit = sourceToken.balance === 0 ? 0 : sourceToken.value / sourceToken.balance;
+    const pricePerUnit = getReferenceTokenPrice(baseAsset, tokens);
 
     setTokens((current) =>
       current.map((token) =>
@@ -404,7 +418,7 @@ export function App() {
       };
     }
 
-    const pricePerUnit = baseToken.balance === 0 ? 0 : baseToken.value / baseToken.balance;
+    const pricePerUnit = getReferenceTokenPrice(position.baseAsset, tokens);
     const nextBalance = baseToken.balance + position.currentValue;
 
     setTokens((current) =>

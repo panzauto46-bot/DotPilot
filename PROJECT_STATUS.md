@@ -25,7 +25,7 @@ The single critical gap is the **Solidity vault smart contract**, which is the p
 | Workstream | Progress | Status |
 |---|---|---|
 | Product & UX | 100% | ✅ Complete |
-| Frontend | 95% | ✅ Complete |
+| Frontend | 100% | ✅ Complete |
 | AI & Data Layer | 90% | ✅ Complete |
 | Documentation | 85% | ✅ Complete |
 | Smart Contract | 0% | ❌ Not Started |
@@ -313,9 +313,9 @@ From PRD Section 13 and ROADMAP Section 9.5:
 | Issue | Description | Effort |
 |---|---|---|
 | Mixed language | Error messages in `App.tsx` are in Indonesian; UI is in English | ✅ Fixed |
-| Package name | `package.json` uses `"react-vite-tailwind"` instead of `"dotpilot"` | 1 min |
+| Package name | `package.json` uses `"react-vite-tailwind"` instead of `"dotpilot"` | ✅ Fixed |
 | Demo wallet address | Hardcoded address is too short (not valid 40 hex chars) | ✅ Fixed |
-| Unused exports | `vaultPositions`, `aiResponses`, `initialMessages` in `mockData.ts` not used | 10 min |
+| Unused exports | `vaultPositions`, `aiResponses`, `initialMessages` in `mockData.ts` not used | ✅ Fixed |
 | SEO | `index.html` missing meta description | ✅ Fixed |
 | Commit history | Only 4 commits; more granular commits recommended | Ongoing |
 
