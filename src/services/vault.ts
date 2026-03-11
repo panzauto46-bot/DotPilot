@@ -1,6 +1,7 @@
 import { BrowserProvider, Contract, formatUnits, isAddress, parseUnits } from 'ethers';
 import { DefiOpportunity, VaultPosition, WalletProvider } from '../types';
 import { getPrimaryAssetSymbol } from '../utils/portfolio';
+import { Eip1193Provider, getInjectedProvider } from './evmProvider';
 
 const VAULT_ABI = [
   'function getStrategy(uint256 strategyId) view returns (tuple(uint256 id, bytes32 strategyKey, address asset, bool isNative, bool active, uint16 riskScore))',
@@ -18,6 +19,11 @@ const ERC20_ABI = [
 
 const DEFAULT_CHAIN_LABEL = import.meta.env.VITE_DOTPILOT_CHAIN_LABEL?.trim() || 'Polkadot Hub EVM';
 const DEFAULT_NATIVE_DECIMALS = 18;
+const DEFAULT_CHAIN_RPC_URL = import.meta.env.VITE_DOTPILOT_CHAIN_RPC_URL?.trim()
+  || 'https://services.polkadothub-rpc.com/testnet';
+const DEFAULT_BLOCK_EXPLORER_URL = import.meta.env.VITE_DOTPILOT_BLOCK_EXPLORER_URL?.trim()
+  || 'https://blockscout-passet-hub.parity-testnet.parity.io';
+const DEFAULT_CHAIN_SYMBOL = import.meta.env.VITE_DOTPILOT_CHAIN_SYMBOL?.trim() || 'PAS';
 
 type ContractStrategy = {
   id: bigint;
@@ -88,9 +94,120 @@ function getExpectedChainId() {
   }
 }
 
+function getAllowedChainIds() {
+  const rawChainIds = import.meta.env.VITE_DOTPILOT_CHAIN_IDS?.trim();
+
+  if (!rawChainIds) {
+    const singleChainId = getExpectedChainId();
+    return singleChainId === null ? [] : [singleChainId];
+  }
+
+  return rawChainIds
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0)
+    .map((value) => {
+      try {
+        return BigInt(value);
+      } catch {
+        return null;
+      }
+    })
+    .filter((value): value is bigint => value !== null);
+}
+
+function toHexChainId(chainId: bigint) {
+  return `0x${chainId.toString(16)}`;
+}
+
+function getRequestErrorCode(caughtError: unknown) {
+  if (typeof caughtError !== 'object' || caughtError === null) {
+    return null;
+  }
+
+  if ('code' in caughtError && typeof caughtError.code === 'number') {
+    return caughtError.code;
+  }
+
+  if ('error' in caughtError && typeof caughtError.error === 'object' && caughtError.error !== null) {
+    const nestedError = caughtError.error as { code?: unknown };
+    if (typeof nestedError.code === 'number') {
+      return nestedError.code;
+    }
+  }
+
+  return null;
+}
+
+async function ensureAllowedChain(
+  injectedProvider: Eip1193Provider,
+  browserProvider: BrowserProvider
+) {
+  const allowedChainIds = getAllowedChainIds();
+  if (allowedChainIds.length === 0) {
+    return;
+  }
+
+  const currentNetwork = await browserProvider.getNetwork();
+  if (allowedChainIds.includes(currentNetwork.chainId)) {
+    return;
+  }
+
+  const primaryChainId = allowedChainIds[0];
+  const chainIdHex = toHexChainId(primaryChainId);
+  const switchErrorMessage = `Switch wallet to ${DEFAULT_CHAIN_LABEL} (chain ID ${primaryChainId.toString()}).`;
+
+  try {
+    await injectedProvider.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: chainIdHex }],
+    });
+  } catch (caughtError) {
+    const errorCode = getRequestErrorCode(caughtError);
+
+    if (errorCode !== 4902) {
+      throw new Error(switchErrorMessage);
+    }
+
+    try {
+      await injectedProvider.request({
+        method: 'wallet_addEthereumChain',
+        params: [
+          {
+            chainId: chainIdHex,
+            chainName: DEFAULT_CHAIN_LABEL,
+            nativeCurrency: {
+              name: DEFAULT_CHAIN_SYMBOL,
+              symbol: DEFAULT_CHAIN_SYMBOL,
+              decimals: DEFAULT_NATIVE_DECIMALS,
+            },
+            rpcUrls: [DEFAULT_CHAIN_RPC_URL],
+            blockExplorerUrls: [DEFAULT_BLOCK_EXPLORER_URL],
+          },
+        ],
+      });
+
+      await injectedProvider.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: chainIdHex }],
+      });
+    } catch {
+      throw new Error(switchErrorMessage);
+    }
+  }
+
+  // Some injected providers keep stale chain state for an existing BrowserProvider.
+  const refreshedProvider = new BrowserProvider(injectedProvider);
+  const refreshedNetwork = await refreshedProvider.getNetwork();
+  if (!allowedChainIds.includes(refreshedNetwork.chainId)) {
+    throw new Error(switchErrorMessage);
+  }
+}
+
 async function getConnectedVault() {
-  if (!window.ethereum) {
-    throw new Error('MetaMask was not detected in this browser.');
+  const injectedProvider = getInjectedProvider();
+  if (!injectedProvider) {
+    throw new Error('No injected EVM wallet was detected in this browser.');
   }
 
   const contractAddress = getVaultAddress();
@@ -98,17 +215,12 @@ async function getConnectedVault() {
     throw new Error('VITE_DOTPILOT_VAULT_ADDRESS is not configured.');
   }
 
-  const provider = new BrowserProvider(window.ethereum);
-  const network = await provider.getNetwork();
-  const expectedChainId = getExpectedChainId();
+  const provider = new BrowserProvider(injectedProvider);
+  await ensureAllowedChain(injectedProvider, provider);
 
-  if (expectedChainId !== null && network.chainId !== expectedChainId) {
-    throw new Error(
-      `Switch MetaMask to ${DEFAULT_CHAIN_LABEL} (chain ID ${expectedChainId.toString()}).`
-    );
-  }
+  const readyProvider = new BrowserProvider(injectedProvider);
 
-  const signer = await provider.getSigner();
+  const signer = await readyProvider.getSigner();
   const contract = new Contract(contractAddress, VAULT_ABI, signer);
 
   return { contract, contractAddress, signer };

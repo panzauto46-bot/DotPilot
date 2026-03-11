@@ -17,15 +17,8 @@ import {
   WalletProvider,
 } from './types';
 import { depositToVault, getVaultRuntime, syncVaultPositions, withdrawFromVault } from './services/vault';
+import { getInjectedProvider } from './services/evmProvider';
 import { getPrimaryAssetSymbol, getUsdValue, toNotification } from './utils/portfolio';
-
-declare global {
-  interface Window {
-    ethereum?: {
-      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-    };
-  }
-}
 
 interface PersistedAppState {
   currentPage?: Page;
@@ -335,11 +328,12 @@ export function App() {
     let address = DEMO_WALLET_ADDRESS;
 
     if (provider === 'metamask') {
-      if (!window.ethereum) {
-        throw new Error('MetaMask was not detected in this browser.');
+      const injectedProvider = getInjectedProvider();
+      if (!injectedProvider) {
+        throw new Error('No injected EVM wallet was detected in this browser.');
       }
 
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const accounts = await injectedProvider.request({ method: 'eth_requestAccounts' });
       const connectedAddress = Array.isArray(accounts) ? accounts[0] : null;
 
       if (typeof connectedAddress !== 'string' || connectedAddress.length === 0) {
