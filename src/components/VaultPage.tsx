@@ -8,8 +8,10 @@ import {
   TrendingUp,
   AlertTriangle,
   Check,
+  LoaderCircle,
+  RefreshCw,
 } from 'lucide-react';
-import { DefiOpportunity, Token, VaultPosition } from '../types';
+import { DefiOpportunity, Token, VaultActionResult, VaultPosition, VaultRuntimeState } from '../types';
 import { cn } from '../utils/cn';
 import { getPrimaryAssetSymbol, getUsdValue } from '../utils/portfolio';
 
@@ -19,14 +21,18 @@ interface VaultPageProps {
   positions: VaultPosition[];
   opportunities: DefiOpportunity[];
   tokens: Token[];
+  vaultRuntime: VaultRuntimeState;
+  syncingVault: boolean;
+  vaultSyncError: string;
   onSelectStrategy: (strategyId: string) => void;
-  onDeposit: (strategyId: string, amount: number) => { ok: boolean; message: string };
-  onWithdraw: (positionId: string) => { ok: boolean; message: string };
+  onDeposit: (strategyId: string, amount: string) => Promise<VaultActionResult>;
+  onWithdraw: (positionId: string) => Promise<VaultActionResult>;
+  onRefreshVault: () => Promise<void>;
   onConnectWallet: () => void;
 }
 
 interface FeedbackState {
-  tone: 'success' | 'error';
+  tone: 'success' | 'error' | 'info';
   title: string;
   detail: string;
 }
@@ -39,14 +45,21 @@ export function VaultPage({
   positions,
   opportunities,
   tokens,
+  vaultRuntime,
+  syncingVault,
+  vaultSyncError,
   onSelectStrategy,
   onDeposit,
   onWithdraw,
+  onRefreshVault,
   onConnectWallet,
 }: VaultPageProps) {
   const [activeTab, setActiveTab] = useState<VaultTab>('positions');
   const [depositAmount, setDepositAmount] = useState('');
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+  const [depositPending, setDepositPending] = useState(false);
+  const [withdrawPendingId, setWithdrawPendingId] = useState<string | null>(null);
+  const [refreshPending, setRefreshPending] = useState(false);
 
   const selectedStrategy = useMemo(
     () =>
@@ -80,7 +93,20 @@ export function VaultPage({
     }
   }, [selectedStrategyId]);
 
-  const handleDeposit = () => {
+  const runtimeToneClasses =
+    vaultRuntime.mode === 'onchain'
+      ? 'border-green-500/20 bg-green-500/10 text-green-300'
+      : vaultRuntime.mode === 'simulation'
+        ? 'border-dot-cyan/20 bg-dot-cyan/10 text-surface-100'
+        : 'border-yellow-500/20 bg-yellow-500/10 text-yellow-200';
+
+  const depositDisabled =
+    depositPending ||
+    !depositAmount ||
+    Number.parseFloat(depositAmount) <= 0 ||
+    vaultRuntime.mode === 'configuration_required';
+
+  const handleDeposit = async () => {
     if (!selectedStrategy) {
       setFeedback({
         tone: 'error',
@@ -90,12 +116,25 @@ export function VaultPage({
       return;
     }
 
-    const amount = Number.parseFloat(depositAmount);
-    const result = onDeposit(selectedStrategy.id, amount);
+    setDepositPending(true);
+    setFeedback({
+      tone: 'info',
+      title: vaultRuntime.mode === 'onchain' ? 'Awaiting Wallet Confirmation' : 'Processing Deposit',
+      detail:
+        vaultRuntime.mode === 'onchain'
+          ? 'Approve the transaction in MetaMask and wait for on-chain confirmation.'
+          : vaultRuntime.detail,
+    });
+
+    const result = await onDeposit(selectedStrategy.id, depositAmount);
 
     setFeedback({
       tone: result.ok ? 'success' : 'error',
-      title: result.ok ? 'Vault Updated' : 'Deposit Failed',
+      title: result.ok
+        ? result.mode === 'onchain'
+          ? 'On-Chain Deposit Confirmed'
+          : 'Demo Deposit Confirmed'
+        : 'Deposit Failed',
       detail: result.message,
     });
 
@@ -103,20 +142,64 @@ export function VaultPage({
       setDepositAmount('');
       setActiveTab('positions');
     }
+
+    setDepositPending(false);
   };
 
-  const handleWithdraw = (positionId: string) => {
-    const result = onWithdraw(positionId);
+  const handleWithdraw = async (positionId: string) => {
+    setWithdrawPendingId(positionId);
+    setFeedback({
+      tone: 'info',
+      title: vaultRuntime.mode === 'onchain' ? 'Awaiting Wallet Confirmation' : 'Processing Withdrawal',
+      detail:
+        vaultRuntime.mode === 'onchain'
+          ? 'Approve the withdrawal in MetaMask and wait for contract confirmation.'
+          : vaultRuntime.detail,
+    });
+
+    const result = await onWithdraw(positionId);
 
     setFeedback({
       tone: result.ok ? 'success' : 'error',
-      title: result.ok ? 'Withdraw Completed' : 'Withdraw Failed',
+      title: result.ok
+        ? result.mode === 'onchain'
+          ? 'On-Chain Withdraw Confirmed'
+          : 'Demo Withdraw Completed'
+        : 'Withdraw Failed',
       detail: result.message,
     });
 
     if (result.ok) {
       setActiveTab('positions');
     }
+
+    setWithdrawPendingId(null);
+  };
+
+  const handleRefresh = async () => {
+    setRefreshPending(true);
+    setFeedback({
+      tone: 'info',
+      title: 'Refreshing Positions',
+      detail: 'Pulling the latest open positions from the vault contract.',
+    });
+
+    try {
+      await onRefreshVault();
+      setFeedback({
+        tone: 'success',
+        title: 'Positions Refreshed',
+        detail: 'The latest on-chain positions are now loaded in DotPilot.',
+      });
+    } catch (caughtError) {
+      setFeedback({
+        tone: 'error',
+        title: 'Refresh Failed',
+        detail: caughtError instanceof Error ? caughtError.message : 'The vault positions could not be refreshed.',
+      });
+    }
+
+    setRefreshPending(false);
   };
 
   if (!walletConnected) {
@@ -138,9 +221,8 @@ export function VaultPage({
           </div>
           <h3 className="text-lg font-semibold text-white">Vault access is locked until wallet connection</h3>
           <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-surface-300">
-            The vault flow is where DotPilot proves on-chain execution. Connect a wallet first, then
-            return here to deposit into the strategy selected from the dashboard, explorer, or AI
-            assistant.
+            The vault flow is where DotPilot proves execution. Connect MetaMask for live contract
+            transactions or use Demo Wallet for local portfolio simulation.
           </p>
           <button
             onClick={onConnectWallet}
@@ -155,15 +237,39 @@ export function VaultPage({
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h2 className="flex items-center gap-2 text-xl font-bold text-white">
-          <Vault size={22} className="text-dot-pink" />
-          Smart Vault
-        </h2>
-        <p className="mt-1 text-sm text-surface-300">
-          Execute the main DotPilot flow and manage active DeFi positions.
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="flex items-center gap-2 text-xl font-bold text-white">
+            <Vault size={22} className="text-dot-pink" />
+            Smart Vault
+          </h2>
+          <p className="mt-1 text-sm text-surface-300">
+            Execute the main DotPilot flow and manage active DeFi positions.
+          </p>
+        </div>
+
+        {vaultRuntime.mode === 'onchain' && (
+          <button
+            onClick={() => void handleRefresh()}
+            disabled={syncingVault || refreshPending}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-surface-500 bg-surface-700/70 px-4 py-2 text-sm text-surface-100 transition-colors hover:border-dot-pink/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <RefreshCw size={14} className={cn((syncingVault || refreshPending) && 'animate-spin')} />
+            {syncingVault || refreshPending ? 'Syncing' : 'Refresh Positions'}
+          </button>
+        )}
       </div>
+
+      <div className={cn('rounded-xl border px-4 py-3', runtimeToneClasses)}>
+        <p className="text-sm font-semibold">{vaultRuntime.label}</p>
+        <p className="mt-1 text-xs leading-relaxed opacity-90">{vaultRuntime.detail}</p>
+      </div>
+
+      {vaultSyncError && (
+        <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+          {vaultSyncError}
+        </div>
+      )}
 
       {feedback && (
         <div
@@ -171,7 +277,9 @@ export function VaultPage({
             'flex items-center gap-3 rounded-xl border px-4 py-3 animate-slide-in',
             feedback.tone === 'success'
               ? 'border-green-500/20 bg-green-500/10'
-              : 'border-red-500/20 bg-red-500/10'
+              : feedback.tone === 'info'
+                ? 'border-dot-cyan/20 bg-dot-cyan/10'
+                : 'border-red-500/20 bg-red-500/10'
           )}
         >
           <div
@@ -179,16 +287,28 @@ export function VaultPage({
               'flex h-8 w-8 items-center justify-center rounded-full',
               feedback.tone === 'success'
                 ? 'bg-green-500/20 text-green-400'
-                : 'bg-red-500/20 text-red-400'
+                : feedback.tone === 'info'
+                  ? 'bg-dot-cyan/20 text-dot-cyan'
+                  : 'bg-red-500/20 text-red-400'
             )}
           >
-            {feedback.tone === 'success' ? <Check size={16} /> : <AlertTriangle size={16} />}
+            {feedback.tone === 'success' ? (
+              <Check size={16} />
+            ) : feedback.tone === 'info' ? (
+              <LoaderCircle size={16} className="animate-spin" />
+            ) : (
+              <AlertTriangle size={16} />
+            )}
           </div>
           <div>
             <p
               className={cn(
                 'text-sm font-medium',
-                feedback.tone === 'success' ? 'text-green-400' : 'text-red-400'
+                feedback.tone === 'success'
+                  ? 'text-green-400'
+                  : feedback.tone === 'info'
+                    ? 'text-dot-cyan'
+                    : 'text-red-400'
               )}
             >
               {feedback.title}
@@ -196,7 +316,11 @@ export function VaultPage({
             <p
               className={cn(
                 'text-xs',
-                feedback.tone === 'success' ? 'text-green-300' : 'text-red-300'
+                feedback.tone === 'success'
+                  ? 'text-green-300'
+                  : feedback.tone === 'info'
+                    ? 'text-surface-200'
+                    : 'text-red-300'
               )}
             >
               {feedback.detail}
@@ -325,10 +449,12 @@ export function VaultPage({
                       Manage
                     </button>
                     <button
-                      onClick={() => handleWithdraw(position.id)}
-                      className="rounded-lg bg-surface-600 px-3 py-2 text-xs text-surface-200 transition-colors hover:bg-surface-500 hover:text-white"
+                      onClick={() => void handleWithdraw(position.id)}
+                      disabled={withdrawPendingId !== null || vaultRuntime.mode === 'configuration_required'}
+                      className="inline-flex items-center gap-2 rounded-lg bg-surface-600 px-3 py-2 text-xs text-surface-200 transition-colors hover:bg-surface-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Withdraw
+                      {withdrawPendingId === position.id && <LoaderCircle size={12} className="animate-spin" />}
+                      {withdrawPendingId === position.id ? 'Processing' : 'Withdraw'}
                     </button>
                   </div>
                 </div>
@@ -338,7 +464,7 @@ export function VaultPage({
             <div className="rounded-xl border border-surface-600 bg-surface-700/40 p-6 text-center">
               <p className="text-sm text-surface-200">No active vault positions yet.</p>
               <p className="mt-1 text-xs text-surface-400">
-                Select a strategy and make your first deposit to activate the demo flow.
+                Select a strategy and make your first deposit to activate the vault flow.
               </p>
               <button
                 onClick={() => setActiveTab('deposit')}
@@ -454,24 +580,34 @@ export function VaultPage({
             <div className="mb-4 flex items-start gap-2 rounded-lg border border-yellow-500/10 bg-yellow-500/5 p-3">
               <AlertTriangle size={14} className="mt-0.5 shrink-0 text-yellow-400" />
               <p className="text-[11px] leading-relaxed text-yellow-400/80">
-                This MVP uses a simplified vault flow for the hackathon demo. Always review the
-                strategy, asset exposure, and transaction details before signing on-chain actions.
+                {vaultRuntime.mode === 'onchain'
+                  ? 'This wallet path signs real transactions. Review the strategy, network, amount, and transaction preview before confirming in MetaMask.'
+                  : vaultRuntime.mode === 'simulation'
+                    ? 'Demo Wallet keeps the seeded portfolio local so you can validate the product flow without signing a transaction.'
+                    : 'The contract address is not configured yet, so live vault transactions are blocked until VITE_DOTPILOT_VAULT_ADDRESS is set.'}
               </p>
             </div>
 
             <button
-              onClick={handleDeposit}
-              disabled={!depositAmount || Number.parseFloat(depositAmount) <= 0}
+              onClick={() => void handleDeposit()}
+              disabled={depositDisabled}
               className={cn(
-                'w-full rounded-xl py-3 text-sm font-semibold transition-all',
-                depositAmount && Number.parseFloat(depositAmount) > 0
+                'inline-flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-all',
+                !depositDisabled
                   ? 'bg-gradient-to-r from-dot-pink to-dot-purple text-white shadow-lg shadow-dot-pink/20 hover:opacity-90'
                   : 'cursor-not-allowed bg-surface-600 text-surface-400'
               )}
             >
-              {depositAmount && Number.parseFloat(depositAmount) > 0
-                ? `Deposit ${depositAmount} ${selectedBaseAsset}`
-                : 'Enter amount'}
+              {depositPending && <LoaderCircle size={14} className="animate-spin" />}
+              {vaultRuntime.mode === 'configuration_required'
+                ? 'Contract address required'
+                : depositPending
+                  ? vaultRuntime.mode === 'onchain'
+                    ? 'Waiting for wallet confirmation'
+                    : 'Updating demo vault'
+                  : depositAmount && Number.parseFloat(depositAmount) > 0
+                    ? `Deposit ${depositAmount} ${selectedBaseAsset}`
+                    : 'Enter amount'}
             </button>
           </div>
         </div>
@@ -499,10 +635,12 @@ export function VaultPage({
                       </p>
                     </div>
                     <button
-                      onClick={() => handleWithdraw(position.id)}
-                      className="rounded-lg bg-surface-500 px-4 py-2 text-xs text-white transition-colors hover:bg-surface-400"
+                      onClick={() => void handleWithdraw(position.id)}
+                      disabled={withdrawPendingId !== null || vaultRuntime.mode === 'configuration_required'}
+                      className="inline-flex items-center gap-2 rounded-lg bg-surface-500 px-4 py-2 text-xs text-white transition-colors hover:bg-surface-400 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Withdraw
+                      {withdrawPendingId === position.id && <LoaderCircle size={12} className="animate-spin" />}
+                      {withdrawPendingId === position.id ? 'Processing' : 'Withdraw'}
                     </button>
                   </div>
                 ))}
@@ -515,8 +653,11 @@ export function VaultPage({
 
             <div className="mt-4 rounded-lg border border-surface-500/30 bg-surface-600/30 p-3">
               <p className="text-xs leading-relaxed text-surface-300">
-                Withdrawal timing depends on the strategy. For the MVP demo, the UI treats withdraw
-                actions as direct exits from the selected position.
+                {vaultRuntime.mode === 'onchain'
+                  ? 'Withdrawals call the deployed vault contract and then refresh the position list from chain state.'
+                  : vaultRuntime.mode === 'simulation'
+                    ? 'Simulation mode treats withdrawals as direct exits from the selected local position.'
+                    : 'Configure the deployed contract address before attempting live withdrawals from MetaMask.'}
               </p>
             </div>
           </div>

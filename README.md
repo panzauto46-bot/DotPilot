@@ -225,14 +225,15 @@ The AI assistant:
 
 #### 4. Blockchain Layer
 
-Represents the planned execution boundary for EVM-compatible smart contracts.
+Represents the live execution boundary for EVM-compatible smart contracts once the deployed vault address is configured.
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌────────────────┐
 │   MetaMask  │────►│   Vault Contract │────►│  Polkadot Hub  │
-│   Provider  │     │   (Planned)      │     │  (EVM Chain)   │
+│   Provider  │     │     (Live)       │     │  (EVM Chain)   │
 └─────────────┘     │                  │     └────────────────┘
                     │  • deposit()     │
+                    │  • depositToken()│
                     │  • withdraw()    │
                     │  • getPosition() │
                     │  • Events        │
@@ -287,7 +288,7 @@ dotpilot/
 ├── 📄 tsconfig.json                 # TypeScript configuration (strict mode)
 ├── 📄 vite.config.ts                # Vite + Tailwind + SingleFile plugin + API proxy
 ├── 📄 vercel.json                   # Vercel function runtime config
-├── 📄 .env.example                  # Example AI runtime environment variables
+├── 📄 .env.example                  # Example AI + vault runtime environment variables
 ├── 📄 .gitignore                    # Git ignore rules
 │
 ├── 📘 PRD.md                        # Product Requirements Document
@@ -331,6 +332,7 @@ dotpilot/
     ├── 📄 main.tsx                  # React DOM entry point
     ├── 📄 App.tsx                   # App orchestrator (shared state, routing)
     ├── 📄 types.ts                  # Shared TypeScript interfaces
+    ├── 📄 vite-env.d.ts             # Vite environment variable typing
     ├── 📄 index.css                 # Design system, themes, animations
     │
     ├── 📁 components/               # UI components
@@ -348,7 +350,8 @@ dotpilot/
     │   └── mockData.ts              # Tokens, strategies, portfolio history, seed chat
     │
     ├── 📁 services/
-    │   └── assistant.ts             # Client requests for AI reply + health status
+    │   ├── assistant.ts             # Client requests for AI reply + health status
+    │   └── vault.ts                 # Ethers-based vault sync, deposit, withdraw runtime
     │
     └── 📁 utils/                    # Reusable helper functions
         ├── assistantFallback.ts     # Deterministic local AI fallback
@@ -582,6 +585,8 @@ Set `DASHSCOPE_API_KEY` in `.env` if you want live Qwen responses locally. Witho
 
 Set `POLKADOT_HUB_RPC_URL` and `DEPLOYER_PRIVATE_KEY` only when you are ready to deploy the vault contract to a real EVM RPC.
 
+Set `VITE_DOTPILOT_VAULT_ADDRESS` when you want the MetaMask vault flow to call the deployed contract instead of remaining blocked at the UI layer. `VITE_DOTPILOT_CHAIN_ID` and `VITE_DOTPILOT_CHAIN_LABEL` are optional but recommended so DotPilot can warn when MetaMask is connected to the wrong chain.
+
 ### Development
 
 ```bash
@@ -623,7 +628,7 @@ npm run contracts:test
 
 ### Build Output
 
-The production build generates a **single HTML file** at `dist/index.html` (~720 KB, ~208 KB gzipped) using `vite-plugin-singlefile`. This makes deployment and sharing extremely simple.
+The production build generates a **single HTML file** at `dist/index.html` (~825 KB, ~239 KB gzipped) using `vite-plugin-singlefile`. This makes deployment and sharing extremely simple.
 
 ---
 
@@ -642,6 +647,9 @@ DotPilot is optimized for deployment on **Vercel** using a static Vite build plu
    - `DASHSCOPE_API_KEY`
    - `DASHSCOPE_BASE_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1`
    - `DASHSCOPE_MODEL_FALLBACKS=qwen-plus,qwen-plus-latest,qwen-turbo,qwen-turbo-latest,qwen-flash,qwen3.5-plus,qwen3-32b,qwen3-14b,qwen3-8b,qwen-max`
+   - `VITE_DOTPILOT_VAULT_ADDRESS=0xyour_deployed_vault_address`
+   - `VITE_DOTPILOT_CHAIN_ID=12345`
+   - `VITE_DOTPILOT_CHAIN_LABEL=Polkadot Hub EVM`
 5. Deploy
 
 ### AI Runtime Endpoints
@@ -662,6 +670,17 @@ npm run contracts:deploy
 ```
 
 The deployment script writes the latest deployment metadata to `deployments/dotpilot-vault.latest.json`.
+
+### Frontend-to-Contract Runtime
+
+When `VITE_DOTPILOT_VAULT_ADDRESS` is set and the user connects with MetaMask, DotPilot switches the vault flow into live contract mode:
+
+- deposits call `deposit()` for native strategies and `depositToken()` for ERC20 strategies
+- withdrawals call `withdraw()`
+- the vault page refreshes positions from `getPosition(address)`
+- transaction feedback is surfaced directly in the UI
+
+If the user connects with Demo Wallet, the vault stays in local simulation mode by design.
 
 ### Alternative: Static Hosting
 
@@ -692,13 +711,15 @@ If you choose static-only hosting, the live AI endpoints must be hosted separate
 - [x] TypeScript strict mode (zero errors)
 - [x] Production build verification
 
-### 🔄 Phase 2 — Smart Contract Integration (In Progress)
+### ✅ Phase 2 — Smart Contract Integration (Completed in Code)
 
 - [x] Solidity vault contract baseline (deposit, withdraw, events)
 - [x] OpenZeppelin security modules (AccessControl, ReentrancyGuard, Pausable)
 - [x] Core local contract tests
+- [x] Frontend-to-contract integration
+- [x] Contract-backed vault sync via `getPosition(address)`
+- [x] Transaction feedback and pending states in the UI
 - [ ] Contract deployment on Polkadot Hub compatible testnet
-- [ ] Frontend-to-contract integration
 - [ ] Transaction hash proof of execution
 - [ ] Contract ABI and address documentation
 
@@ -736,7 +757,7 @@ If you choose static-only hosting, the live AI endpoints must be hosted separate
 
 ### Why DotPilot Fits This Hackathon
 
-1. **Planned Solidity usage** — vault contract is the core execution layer being completed next
+1. **Active Solidity usage** — the vault contract is integrated into the MetaMask flow
 2. **Polkadot Hub native** — designed specifically for the Polkadot ecosystem
 3. **Clear DeFi use case** — staking, yield, and portfolio management
 4. **Meaningful AI layer** — recommendations tied to product actions, not just a chat UI
@@ -747,7 +768,7 @@ If you choose static-only hosting, the live AI endpoints must be hosted separate
 After reviewing DotPilot, the following should be clearly evident:
 
 - ✅ The product solves a real problem in DeFi navigation
-- ⚠️ Smart contract execution is the remaining core implementation gap
+- ✅ Smart contract execution path exists in the frontend and contract runtime
 - ✅ The AI adds genuine product value
 - ✅ The interface is polished and usable
 - ✅ The architecture is clean and extensible

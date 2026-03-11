@@ -44,6 +44,22 @@ export interface VaultPosition {
   status: 'Active' | 'Pending' | 'Completed';
 }
 
+export type VaultRuntimeMode = 'onchain' | 'simulation' | 'configuration_required';
+
+export interface VaultActionResult {
+  ok: boolean;
+  message: string;
+  txHash?: string;
+  mode: VaultRuntimeMode;
+}
+
+export interface VaultRuntimeState {
+  mode: VaultRuntimeMode;
+  label: string;
+  detail: string;
+  contractAddress?: string;
+}
+
 export interface PortfolioHistory {
   date: string;
   value: number;

@@ -9,6 +9,8 @@ interface HeaderProps {
   walletProvider: WalletProvider | null;
   tokens: Token[];
   notifications: NotificationItem[];
+  vaultRuntimeLabel: string;
+  vaultRuntimeTone: 'success' | 'info' | 'warning';
   onConnectWallet: () => void;
   onDisconnectWallet: () => void;
 }
@@ -24,6 +26,8 @@ export function Header({
   walletProvider,
   tokens,
   notifications,
+  vaultRuntimeLabel,
+  vaultRuntimeTone,
   onConnectWallet,
   onDisconnectWallet,
 }: HeaderProps) {
@@ -33,6 +37,18 @@ export function Header({
 
   const walletLabel = getWalletLabel(walletAddress);
   const providerLabel = walletProvider === 'metamask' ? 'MetaMask' : 'Demo Wallet';
+  const runtimeDotClass =
+    vaultRuntimeTone === 'success'
+      ? 'bg-green-400'
+      : vaultRuntimeTone === 'info'
+        ? 'bg-dot-cyan'
+        : 'bg-yellow-400';
+  const runtimeTextClass =
+    vaultRuntimeTone === 'success'
+      ? 'text-surface-200'
+      : vaultRuntimeTone === 'info'
+        ? 'text-dot-cyan'
+        : 'text-yellow-300';
 
   const handleCopy = async () => {
     if (!walletAddress) return;
@@ -59,8 +75,8 @@ export function Header({
 
       <div className="flex items-center gap-3">
         <div className="hidden items-center gap-2 rounded-full border border-surface-600 bg-surface-700 px-3 py-1.5 sm:flex">
-          <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-xs text-surface-200">Polkadot Hub EVM</span>
+          <div className={`h-2 w-2 rounded-full animate-pulse ${runtimeDotClass}`} />
+          <span className={`text-xs ${runtimeTextClass}`}>{vaultRuntimeLabel}</span>
         </div>
 
         <div className="relative">
