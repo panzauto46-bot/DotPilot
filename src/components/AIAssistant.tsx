@@ -5,6 +5,9 @@ import { requestAssistantHealth, requestAssistantReply } from '../services/assis
 import { cn } from '../utils/cn';
 import { buildAssistantReply } from '../utils/assistantFallback';
 
+const ASSISTANT_STORAGE_KEY = 'dotpilot.assistant.messages';
+const MAX_PERSISTED_MESSAGES = 80;
+
 function createMessage(partial: Omit<ChatMessage, 'id' | 'timestamp'>): ChatMessage {
   return {
     ...partial,
@@ -14,6 +17,79 @@ function createMessage(partial: Omit<ChatMessage, 'id' | 'timestamp'>): ChatMess
         : `${Date.now()}`,
     timestamp: new Date(),
   };
+}
+
+function createWelcomeMessage(): ChatMessage {
+  return createMessage({
+    role: 'assistant',
+    content:
+      'Welcome to **DotPilot**.\n\nAsk me about staking, yield opportunities, or passive income and I will guide you into the right strategy flow.',
+  });
+}
+
+function isValidRole(value: unknown): value is ChatMessage['role'] {
+  return value === 'assistant' || value === 'user';
+}
+
+function isValidSource(value: unknown): value is ChatMessage['source'] {
+  return value === 'live' || value === 'fallback' || typeof value === 'undefined';
+}
+
+function loadPersistedMessages(): ChatMessage[] {
+  if (typeof window === 'undefined') {
+    return [createWelcomeMessage()];
+  }
+
+  try {
+    const raw = window.localStorage.getItem(ASSISTANT_STORAGE_KEY);
+    if (!raw) {
+      return [createWelcomeMessage()];
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return [createWelcomeMessage()];
+    }
+
+    const hydrated = parsed
+      .map((entry) => {
+        if (!entry || typeof entry !== 'object') {
+          return null;
+        }
+
+        const candidate = entry as Record<string, unknown>;
+        if (
+          typeof candidate.id !== 'string' ||
+          !isValidRole(candidate.role) ||
+          typeof candidate.content !== 'string' ||
+          typeof candidate.timestamp !== 'string' ||
+          !isValidSource(candidate.source)
+        ) {
+          return null;
+        }
+
+        const timestamp = new Date(candidate.timestamp);
+        if (Number.isNaN(timestamp.getTime())) {
+          return null;
+        }
+
+        return {
+          id: candidate.id,
+          role: candidate.role,
+          content: candidate.content,
+          timestamp,
+          strategyId: typeof candidate.strategyId === 'string' ? candidate.strategyId : undefined,
+          ctaLabel: typeof candidate.ctaLabel === 'string' ? candidate.ctaLabel : undefined,
+          modelUsed: typeof candidate.modelUsed === 'string' ? candidate.modelUsed : undefined,
+          source: candidate.source,
+        } satisfies ChatMessage;
+      })
+      .filter((message): message is ChatMessage => message !== null);
+
+    return hydrated.length > 0 ? hydrated.slice(-MAX_PERSISTED_MESSAGES) : [createWelcomeMessage()];
+  } catch {
+    return [createWelcomeMessage()];
+  }
 }
 
 interface AIAssistantProps {
@@ -31,13 +107,7 @@ export function AIAssistant({
   onOpenStrategy,
   onConnectWallet,
 }: AIAssistantProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    createMessage({
-      role: 'assistant',
-      content:
-        'Welcome to **DotPilot**.\n\nAsk me about staking, yield opportunities, or passive income and I will guide you into the right strategy flow.',
-    }),
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(loadPersistedMessages);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [assistantStatus, setAssistantStatus] = useState<{
@@ -55,6 +125,23 @@ export function AIAssistant({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      const persisted = messages.slice(-MAX_PERSISTED_MESSAGES).map((message) => ({
+        ...message,
+        timestamp: message.timestamp.toISOString(),
+      }));
+
+      window.localStorage.setItem(ASSISTANT_STORAGE_KEY, JSON.stringify(persisted));
+    } catch {
+      return;
+    }
+  }, [messages]);
 
   useEffect(() => {
     if (!previousWalletStateRef.current && walletConnected) {
