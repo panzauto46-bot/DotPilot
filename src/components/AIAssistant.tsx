@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Send, Bot, User, Sparkles, Lightbulb } from 'lucide-react';
 import { ChatMessage, DefiOpportunity } from '../types';
-import { requestAssistantReply } from '../services/assistant';
+import { requestAssistantHealth, requestAssistantReply } from '../services/assistant';
 import { cn } from '../utils/cn';
 import { buildAssistantReply } from '../utils/assistantFallback';
 
@@ -50,6 +50,7 @@ export function AIAssistant({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const previousWalletStateRef = useRef(walletConnected);
   const requestControllerRef = useRef<AbortController | null>(null);
+  const healthControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -71,8 +72,41 @@ export function AIAssistant({
   }, [walletConnected]);
 
   useEffect(() => {
+    healthControllerRef.current?.abort();
+    const controller = new AbortController();
+    healthControllerRef.current = controller;
+
+    void requestAssistantHealth(controller.signal)
+      .then((health) => {
+        if (!health.ok || !health.apiConfigured) {
+          setAssistantStatus({
+            mode: 'fallback',
+            label: 'Fallback ready',
+          });
+          return;
+        }
+
+        setAssistantStatus({
+          mode: 'live',
+          label: health.models[0] ? `Live AI · ${health.models[0]} ready` : 'Live AI ready',
+        });
+      })
+      .catch(() => {
+        setAssistantStatus({
+          mode: 'fallback',
+          label: 'Fallback ready',
+        });
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
+  useEffect(() => {
     return () => {
       requestControllerRef.current?.abort();
+      healthControllerRef.current?.abort();
     };
   }, []);
 
@@ -214,7 +248,7 @@ export function AIAssistant({
               assistantStatus.mode === 'live' ? 'text-green-400' : 'text-yellow-300'
             )}
           >
-            {assistantStatus.mode === 'live' ? assistantStatus.label : 'Local fallback'}
+            {assistantStatus.label}
           </span>
         </div>
       </div>

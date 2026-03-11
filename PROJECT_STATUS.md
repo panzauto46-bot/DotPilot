@@ -26,7 +26,7 @@ The single critical gap is the **Solidity vault smart contract**, which is the p
 |---|---|---|
 | Product & UX | 100% | ✅ Complete |
 | Frontend | 100% | ✅ Complete |
-| AI & Data Layer | 90% | ✅ Complete |
+| AI & Data Layer | 100% | ✅ Complete |
 | Documentation | 85% | ✅ Complete |
 | Smart Contract | 0% | ❌ Not Started |
 | Contract Integration | 0% | ❌ Blocked |
@@ -109,20 +109,20 @@ All shared data contracts are defined in `types.ts`:
 
 ### 3.4 AI Recommendation Engine
 
-The AI assistant is a recommendation engine grounded in the curated strategy dataset. It is **not** a generic chatbot.
+The AI assistant is a grounded recommendation engine backed by live Qwen inference, validated structured outputs, and a deterministic local fallback. It is **not** a generic chatbot.
 
 **How it works:**
 
 ```
-User Input → Keyword Analysis → Strategy Matching → Context Builder → Response
+User Input → Grounded Prompt Builder → Qwen Model Routing → Structured Validation → Strategy CTA Response
 ```
 
-| User Intent | Detection Keywords | Selection Method | Example Output |
-|---|---|---|---|
-| Staking | `stake` | Highest APY among Low risk staking | Bifrost Liquid Staking (16.1% APY) |
-| Best yield | `yield`, `best`, `apy` | Highest APY across all strategies | Stellaswap GLMR/DOT Farm (35.8% APY) |
-| Passive income | `passive`, `income`, `safe`, `risk` | Highest APY among recommended | Hydration DOT/USDT LP (22.3% APY) |
-| Default | Any other input | Best recommended strategy | Context-aware fallback |
+| Capability | Current Behavior | Result |
+|---|---|---|
+| Live AI inference | Uses DashScope/Qwen via `/api/assistant` | Real model-backed responses |
+| Model resilience | Tries multiple models when quota/rate/model errors occur | Automatic failover |
+| Structured grounding | Validates `strategyId` against the dataset and recovers it from protocol mentions in content | CTA stays tied to real strategies |
+| Local fallback | Uses deterministic in-app recommender if live AI is unavailable | Assistant still works |
 
 **Key behaviors:**
 
@@ -130,6 +130,7 @@ User Input → Keyword Analysis → Strategy Matching → Context Builder → Re
 - When connected, responses reference the user's portfolio value
 - Every recommendation includes a CTA button that routes to the vault flow
 - AI never references strategies that do not exist in the app
+- AI availability is checked from the deployed runtime so the status badge reflects real readiness
 
 ### 3.5 Curated Strategy Dataset
 

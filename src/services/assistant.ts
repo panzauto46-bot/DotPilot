@@ -9,6 +9,13 @@ export interface AssistantApiResponse {
   fallbackUsed?: boolean;
 }
 
+export interface AssistantHealthResponse {
+  ok: boolean;
+  apiConfigured: boolean;
+  models: string[];
+  runtime?: string;
+}
+
 interface AssistantApiRequest {
   input: string;
   walletConnected: boolean;
@@ -39,6 +46,23 @@ export async function requestAssistantReply(
 
   if (!data || typeof data !== 'object' || !('content' in data) || typeof data.content !== 'string') {
     throw new Error('AI response was empty.');
+  }
+
+  return data;
+}
+
+export async function requestAssistantHealth(
+  signal?: AbortSignal
+): Promise<AssistantHealthResponse> {
+  const response = await fetch('/api/health', {
+    method: 'GET',
+    signal,
+  });
+
+  const data = (await response.json().catch(() => null)) as AssistantHealthResponse | null;
+
+  if (!response.ok || !data) {
+    throw new Error('Assistant health check failed.');
   }
 
   return data;
