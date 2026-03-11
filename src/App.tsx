@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { Dashboard } from './components/Dashboard';
@@ -30,24 +30,119 @@ interface VaultActionResult {
   message: string;
 }
 
-const DEMO_WALLET_ADDRESS = '0x7F4e92Bc1dA5f3E8b291C0aD6eF7B2c48a3C';
+interface PersistedAppState {
+  currentPage?: Page;
+  sidebarCollapsed?: boolean;
+  walletAddress?: string;
+  walletProvider?: WalletProvider | null;
+  selectedStrategyId?: string;
+  tokens?: Token[];
+  positions?: VaultPosition[];
+  activity?: Array<Omit<ActivityItem, 'timestamp'> & { timestamp: string }>;
+}
+
+const STORAGE_KEY = 'dotpilot.session-state';
+const DEMO_WALLET_ADDRESS = '0x7F4e92Bc1dA5f3E8b291C0aD6eF7B2c48a3C9d1E';
 const RESTRICTED_PAGES: Page[] = ['assistant', 'strategies', 'vault', 'portfolio'];
+const VALID_PAGES: Page[] = ['dashboard', 'assistant', 'strategies', 'vault', 'portfolio'];
+
+function loadPersistedState(): PersistedAppState | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw) as PersistedAppState;
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function loadPersistedPage() {
+  const persisted = loadPersistedState();
+  return persisted?.currentPage && VALID_PAGES.includes(persisted.currentPage)
+    ? persisted.currentPage
+    : 'dashboard';
+}
+
+function loadPersistedSidebarState() {
+  const persisted = loadPersistedState();
+  if (typeof persisted?.sidebarCollapsed === 'boolean') {
+    return persisted.sidebarCollapsed;
+  }
+
+  return typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+}
+
+function loadPersistedWalletAddress() {
+  const persisted = loadPersistedState();
+  return typeof persisted?.walletAddress === 'string' ? persisted.walletAddress : '';
+}
+
+function loadPersistedWalletProvider() {
+  const persisted = loadPersistedState();
+  return persisted?.walletProvider === 'metamask' || persisted?.walletProvider === 'demo'
+    ? persisted.walletProvider
+    : null;
+}
+
+function loadPersistedStrategyId() {
+  const persisted = loadPersistedState();
+  if (
+    typeof persisted?.selectedStrategyId === 'string' &&
+    defiOpportunities.some((opportunity) => opportunity.id === persisted.selectedStrategyId)
+  ) {
+    return persisted.selectedStrategyId;
+  }
+
+  return defiOpportunities.find((opportunity) => opportunity.recommended)?.id ?? defiOpportunities[0].id;
+}
+
+function loadPersistedTokens() {
+  const persisted = loadPersistedState();
+  if (Array.isArray(persisted?.tokens) && persisted.tokens.length > 0) {
+    return persisted.tokens;
+  }
+
+  return initialTokens;
+}
+
+function loadPersistedPositions() {
+  const persisted = loadPersistedState();
+  return Array.isArray(persisted?.positions) ? persisted.positions : [];
+}
+
+function loadPersistedActivity() {
+  const persisted = loadPersistedState();
+  if (!Array.isArray(persisted?.activity)) {
+    return [];
+  }
+
+  return persisted.activity
+    .map((item) => ({
+      ...item,
+      timestamp: new Date(item.timestamp),
+    }))
+    .filter((item) => !Number.isNaN(item.timestamp.getTime()));
+}
 
 export function App() {
-  const [currentPage, setCurrentPage] = useState<Page>('dashboard');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(
-    () => (typeof window !== 'undefined' ? window.innerWidth < 768 : false)
-  );
+  const [currentPage, setCurrentPage] = useState<Page>(loadPersistedPage);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(loadPersistedSidebarState);
   const [showWalletModal, setShowWalletModal] = useState(false);
-  const [walletAddress, setWalletAddress] = useState('');
-  const [walletProvider, setWalletProvider] = useState<WalletProvider | null>(null);
+  const [walletAddress, setWalletAddress] = useState(loadPersistedWalletAddress);
+  const [walletProvider, setWalletProvider] = useState<WalletProvider | null>(loadPersistedWalletProvider);
   const [pendingPageAfterConnect, setPendingPageAfterConnect] = useState<Page | null>(null);
-  const [selectedStrategyId, setSelectedStrategyId] = useState(
-    defiOpportunities.find((opportunity) => opportunity.recommended)?.id ?? defiOpportunities[0].id
-  );
-  const [tokens, setTokens] = useState<Token[]>(initialTokens);
-  const [positions, setPositions] = useState<VaultPosition[]>([]);
-  const [activity, setActivity] = useState<ActivityItem[]>([]);
+  const [selectedStrategyId, setSelectedStrategyId] = useState(loadPersistedStrategyId);
+  const [tokens, setTokens] = useState<Token[]>(loadPersistedTokens);
+  const [positions, setPositions] = useState<VaultPosition[]>(loadPersistedPositions);
+  const [activity, setActivity] = useState<ActivityItem[]>(loadPersistedActivity);
 
   const walletConnected = walletAddress.length > 0;
 
@@ -76,6 +171,44 @@ export function App() {
     () => activity.slice(0, 3).map(toNotification),
     [activity]
   );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    window.sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        currentPage,
+        sidebarCollapsed,
+        walletAddress,
+        walletProvider,
+        selectedStrategyId,
+        tokens,
+        positions,
+        activity: activity.map((item) => ({
+          ...item,
+          timestamp: item.timestamp.toISOString(),
+        })),
+      } satisfies PersistedAppState)
+    );
+  }, [
+    activity,
+    currentPage,
+    positions,
+    selectedStrategyId,
+    sidebarCollapsed,
+    tokens,
+    walletAddress,
+    walletProvider,
+  ]);
+
+  useEffect(() => {
+    if (!walletConnected && RESTRICTED_PAGES.includes(currentPage)) {
+      setCurrentPage('dashboard');
+    }
+  }, [currentPage, walletConnected]);
 
   const createActivity = (item: Omit<ActivityItem, 'id' | 'timestamp'>) => {
     setActivity((current) => [
@@ -122,14 +255,14 @@ export function App() {
 
     if (provider === 'metamask') {
       if (!window.ethereum) {
-        throw new Error('MetaMask tidak terdeteksi di browser ini.');
+        throw new Error('MetaMask was not detected in this browser.');
       }
 
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       const connectedAddress = Array.isArray(accounts) ? accounts[0] : null;
 
       if (typeof connectedAddress !== 'string' || connectedAddress.length === 0) {
-        throw new Error('Tidak ada akun yang dikembalikan oleh wallet.');
+        throw new Error('No wallet account was returned by MetaMask.');
       }
 
       address = connectedAddress;
@@ -171,24 +304,24 @@ export function App() {
   const handleDeposit = (strategyId: string, amount: number): VaultActionResult => {
     const strategy = defiOpportunities.find((opportunity) => opportunity.id === strategyId);
     if (!strategy) {
-      return { ok: false, message: 'Strategi tidak ditemukan.' };
+      return { ok: false, message: 'The selected strategy could not be found.' };
     }
 
     const baseAsset = getPrimaryAssetSymbol(strategy.asset);
     const sourceToken = tokens.find((token) => token.symbol === baseAsset);
 
     if (!sourceToken) {
-      return { ok: false, message: `Asset sumber ${baseAsset} belum tersedia.` };
+      return { ok: false, message: `The source asset ${baseAsset} is not available in this wallet.` };
     }
 
     if (amount <= 0) {
-      return { ok: false, message: 'Masukkan jumlah deposit yang valid.' };
+      return { ok: false, message: 'Enter a valid deposit amount.' };
     }
 
     if (amount > sourceToken.balance) {
       return {
         ok: false,
-        message: `Saldo ${baseAsset} tidak cukup untuk deposit ini.`,
+        message: `Your ${baseAsset} balance is too low for this deposit.`,
       };
     }
 
@@ -253,21 +386,21 @@ export function App() {
 
     return {
       ok: true,
-      message: `${amount.toLocaleString()} ${baseAsset} berhasil dialokasikan ke ${strategy.protocol}.`,
+      message: `${amount.toLocaleString()} ${baseAsset} was allocated to ${strategy.protocol}.`,
     };
   };
 
   const handleWithdraw = (positionId: string): VaultActionResult => {
     const position = positions.find((item) => item.id === positionId);
     if (!position) {
-      return { ok: false, message: 'Posisi vault tidak ditemukan.' };
+      return { ok: false, message: 'The selected vault position could not be found.' };
     }
 
     const baseToken = tokens.find((token) => token.symbol === position.baseAsset);
     if (!baseToken) {
       return {
         ok: false,
-        message: `Asset ${position.baseAsset} belum tersedia untuk withdraw.`,
+        message: `The asset ${position.baseAsset} is not available for withdrawal.`,
       };
     }
 
@@ -299,7 +432,7 @@ export function App() {
 
     return {
       ok: true,
-      message: `${position.currentValue.toLocaleString()} ${position.baseAsset} berhasil ditarik dari ${position.strategy}.`,
+      message: `${position.currentValue.toLocaleString()} ${position.baseAsset} was withdrawn from ${position.strategy}.`,
     };
   };
 
