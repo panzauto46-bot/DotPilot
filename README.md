@@ -39,7 +39,7 @@
 
 **DotPilot** is an AI-powered DeFi navigation dapp built for the **Polkadot Solidity Hackathon** on [DoraHacks](https://dorahacks.io).
 
-Instead of forcing users to jump between fragmented DeFi tools, DotPilot combines **strategy discovery**, **AI-guided recommendations**, and a **vault execution flow** into one polished product experience. The current MVP already ships a production-ready frontend, live AI runtime, hosted deployment path, and a compile-tested Solidity vault baseline, while target-network deployment and frontend contract integration remain the main work in progress for the hackathon submission.
+Instead of forcing users to jump between fragmented DeFi tools, DotPilot combines **strategy discovery**, **AI-guided recommendations**, and a **vault execution flow** into one polished product experience. The current MVP ships a production-ready frontend, live AI runtime, hosted deployment, and a live Solidity vault deployment on Polkadot Hub EVM testnet with confirmed on-chain deposit and withdraw execution.
 
 ### The Problem
 
@@ -84,7 +84,7 @@ Ask questions like *"Where should I stake my DOT?"* and receive **grounded recom
     <td width="50%">
 
 ### 🏦 Smart Vault
-Use a vault-ready deposit and withdraw flow that mirrors the intended product UX. A local Solidity vault baseline now exists with tested deposit and withdraw logic, while the frontend still simulates those actions until on-chain integration is completed.
+Use a live vault execution flow backed by a deployed Solidity contract. MetaMask users execute real on-chain deposit and withdraw transactions, while the Demo Wallet remains clearly labeled simulation mode for fallback demos.
 
 </td>
     <td width="50%">
@@ -585,7 +585,7 @@ Set `DASHSCOPE_API_KEY` in `.env` if you want live Qwen responses locally. Witho
 
 Set `POLKADOT_HUB_RPC_URL` and `DEPLOYER_PRIVATE_KEY` only when you are ready to deploy the vault contract to a real EVM RPC.
 
-Set `VITE_DOTPILOT_VAULT_ADDRESS` when you want the MetaMask vault flow to call the deployed contract instead of remaining blocked at the UI layer. `VITE_DOTPILOT_CHAIN_ID` and `VITE_DOTPILOT_CHAIN_LABEL` are optional but recommended so DotPilot can warn when MetaMask is connected to the wrong chain.
+Set `VITE_DOTPILOT_VAULT_ADDRESS`, `VITE_DOTPILOT_CHAIN_ID`, and `VITE_DOTPILOT_CHAIN_LABEL` to activate live MetaMask vault mode and chain validation in the frontend.
 
 ### Development
 
@@ -647,8 +647,8 @@ DotPilot is optimized for deployment on **Vercel** using a static Vite build plu
    - `DASHSCOPE_API_KEY`
    - `DASHSCOPE_BASE_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1`
    - `DASHSCOPE_MODEL_FALLBACKS=qwen-plus,qwen-plus-latest,qwen-turbo,qwen-turbo-latest,qwen-flash,qwen3.5-plus,qwen3-32b,qwen3-14b,qwen3-8b,qwen-max`
-   - `VITE_DOTPILOT_VAULT_ADDRESS=0xyour_deployed_vault_address`
-   - `VITE_DOTPILOT_CHAIN_ID=12345`
+   - `VITE_DOTPILOT_VAULT_ADDRESS=0x49Ee39851956df07E5d3B430dC91e5A00B7E6059`
+   - `VITE_DOTPILOT_CHAIN_ID=420420417`
    - `VITE_DOTPILOT_CHAIN_LABEL=Polkadot Hub EVM`
 5. Deploy
 
@@ -671,9 +671,18 @@ npm run contracts:deploy
 
 The deployment script writes the latest deployment metadata to `deployments/dotpilot-vault.latest.json`.
 
+### Live Testnet Proof
+
+- Contract: `0x49Ee39851956df07E5d3B430dC91e5A00B7E6059`
+- Chain ID: `420420417` (Polkadot Hub EVM testnet)
+- Deploy tx: `0x61186e5dd0b003008805404240f448ca291fb49fe4254486a22e527089d345c1`
+- Strategy seed tx: `0x64f018c24775ec1b3c7c16e5a4303510bc4c107cd381d2040b215ea5e4b1a1e1`
+- Deposit tx: `0x9721d6bdae4c2b934fe6143299b0d52c5ec1e22a68e00b663b0595f026d960cf`
+- Withdraw tx: `0x1ed1dc61c0f48fc69f0dabb0da24b60315cfd3e9b8f929ffef4400a882b11f5e`
+
 ### Frontend-to-Contract Runtime
 
-When `VITE_DOTPILOT_VAULT_ADDRESS` is set and the user connects with MetaMask, DotPilot switches the vault flow into live contract mode:
+With the configured production env vars and MetaMask connection, DotPilot runs in live contract mode:
 
 - deposits call `deposit()` for native strategies and `depositToken()` for ERC20 strategies
 - withdrawals call `withdraw()`
@@ -711,7 +720,7 @@ If you choose static-only hosting, the live AI endpoints must be hosted separate
 - [x] TypeScript strict mode (zero errors)
 - [x] Production build verification
 
-### ✅ Phase 2 — Smart Contract Integration (Completed in Code)
+### ✅ Phase 2 — Smart Contract Integration (Completed Live)
 
 - [x] Solidity vault contract baseline (deposit, withdraw, events)
 - [x] OpenZeppelin security modules (AccessControl, ReentrancyGuard, Pausable)
@@ -719,17 +728,17 @@ If you choose static-only hosting, the live AI endpoints must be hosted separate
 - [x] Frontend-to-contract integration
 - [x] Contract-backed vault sync via `getPosition(address)`
 - [x] Transaction feedback and pending states in the UI
-- [ ] Contract deployment on Polkadot Hub compatible testnet
-- [ ] Transaction hash proof of execution
-- [ ] Contract ABI and address documentation
+- [x] Contract deployment on Polkadot Hub EVM testnet
+- [x] Transaction hash proof of execution (deploy/deposit/withdraw)
+- [x] Contract address documentation in project docs
 
-### 📦 Phase 3 — Submission & Demo (Upcoming)
+### 📦 Phase 3 — Submission & Demo (In Progress)
 
 - [x] Hosted deployment scaffolding (Vercel + serverless AI endpoints)
-- [ ] Final hosted flow verification
+- [x] Final hosted flow verification
 - [ ] Demo video recording
 - [ ] Pitch deck preparation
-- [ ] Repository cleanup and final polish
+- [x] Repository cleanup and final polish
 - [ ] DoraHacks submission form
 
 ### 🔮 Phase 4 — Post-Hackathon Vision

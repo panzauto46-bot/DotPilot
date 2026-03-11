@@ -1,7 +1,7 @@
 # DotPilot — Comprehensive Project Status Report
 
-**Report Date:** March 11, 2026  
-**Submission Deadline:** March 20, 2026 (9 days remaining)  
+**Report Date:** March 12, 2026  
+**Submission Deadline:** March 20, 2026 (8 days remaining)  
 **Demo Days:** March 24–25, 2026  
 **Hackathon:** DoraHacks — Polkadot Solidity Hackathon  
 **Track:** Track 1 — EVM Smart Contract  
@@ -14,12 +14,12 @@
 
 DotPilot is an AI-powered DeFi navigation dapp built for Polkadot Hub. The frontend MVP is **fully operational** — all 9 components are functional, TypeScript compiles with zero errors, and the production build passes cleanly.
 
-A first **Solidity vault smart contract baseline now exists locally** with OpenZeppelin roles, native and ERC20 deposit flows, withdraw logic, and passing tests. The frontend vault is now wired for **MetaMask-driven contract execution and position sync**, leaving **target-network deployment proof** as the main remaining Track 1 gap.
+A **live Solidity vault contract is now deployed on Polkadot Hub EVM testnet**, with MetaMask-driven deposit and withdraw transactions confirmed on-chain from the hosted app. The remaining submission work is now packaging quality: demo video and pitch materials.
 
 ### Overall Progress
 
 ```
-██████████████████████░░░░ 86% Complete
+███████████████████████░░ 92% Complete
 ```
 
 | Workstream | Progress | Status |
@@ -30,8 +30,8 @@ A first **Solidity vault smart contract baseline now exists locally** with OpenZ
 | Documentation | 100% | ✅ Complete |
 | Smart Contract | 100% | ✅ Complete |
 | Contract Integration | 100% | ✅ Complete |
-| Hosted Deployment | 90% | ✅ In Progress |
-| Demo Assets | 0% | ❌ Not Started |
+| Hosted Deployment | 100% | ✅ Complete |
+| Demo Assets | 35% | ✅ In Progress |
 
 ---
 
@@ -39,7 +39,7 @@ A first **Solidity vault smart contract baseline now exists locally** with OpenZ
 
 ### Positioning Statement
 
-> An AI-powered DeFi navigation dapp on Polkadot Hub that helps users discover, understand, and execute DeFi strategies through a vault flow designed for a forthcoming Solidity smart contract.
+> An AI-powered DeFi navigation dapp on Polkadot Hub that helps users discover, understand, and execute DeFi strategies through a live Solidity vault contract.
 
 ### Core MVP Flow
 
@@ -226,7 +226,7 @@ b0dfe3f Expand README with architecture and roadmap details
 **Estimated effort:** Complete for local baseline  
 **Status:** Complete
 
-The Solidity vault contract baseline is now implemented locally. The remaining Track 1 blockers are no longer the contract source or frontend integration, but **target-network deployment proof** and final hosted verification with the deployed address configured.
+The Solidity vault contract baseline is implemented and live-deployed on Polkadot Hub EVM testnet. Contract source, runtime integration, and hosted verification are complete.
 
 **Required contract interface (from PRD Section 6.6 and ROADMAP Section 7.6):**
 
@@ -258,12 +258,11 @@ The Solidity vault contract baseline is now implemented locally. The remaining T
 - [x] OpenZeppelin usage is clearly documented and meaningful
 - [x] Local compile and local test flows are working
 
-### 4.2 Frontend-to-Contract Integration — COMPLETE IN CODE
+### 4.2 Frontend-to-Contract Integration — COMPLETE (LIVE)
 
 **Priority:** 🔴 Must-have  
 **Estimated effort:** 1–2 days  
-**Status:** Complete  
-**Dependency:** A deployed contract address is still required to activate the live MetaMask path in each environment
+**Status:** Complete
 
 **Delivered:**
 
@@ -274,31 +273,41 @@ The Solidity vault contract baseline is now implemented locally. The remaining T
 5. UI now handles pending, confirmed, and failed transaction states
 6. Positions now refresh from `getPosition(address)` after MetaMask actions
 
-**Current state:** MetaMask uses live contract calls when `VITE_DOTPILOT_VAULT_ADDRESS` is configured. Demo Wallet intentionally remains local simulation mode.
+**Current state:** MetaMask live path is active in production with contract calls, strategy sync, and on-chain transaction feedback. Demo Wallet intentionally remains local simulation mode.
 
-### 4.3 Contract Deployment Proof — CRITICAL
+### 4.3 Contract Deployment Proof — COMPLETE
 
 **Priority:** 🔴 Must-have  
-**Estimated effort:** 0.5 days  
-**Status:** Not started
+**Estimated effort:** Complete  
+**Status:** Complete
 
-- [ ] Deploy to Polkadot Hub testnet or compatible EVM environment
-- [ ] Record contract address
-- [ ] Capture transaction hash as proof of deployment
-- [ ] Document contract address in README and submission
+- [x] Deploy to Polkadot Hub EVM testnet
+- [x] Record contract address
+- [x] Capture deployment transaction hash
+- [x] Verify live deposit and withdraw execution from hosted frontend
 
-### 4.4 Hosted Deployment — IMPORTANT
+**Deployment and execution proofs:**
+
+- Contract address: `0x49Ee39851956df07E5d3B430dC91e5A00B7E6059`
+- Deploy tx: `0x61186e5dd0b003008805404240f448ca291fb49fe4254486a22e527089d345c1`
+- Strategy seed tx: `0x64f018c24775ec1b3c7c16e5a4303510bc4c107cd381d2040b215ea5e4b1a1e1`
+- Deposit tx: `0x9721d6bdae4c2b934fe6143299b0d52c5ec1e22a68e00b663b0595f026d960cf`
+- Withdraw tx: `0x1ed1dc61c0f48fc69f0dabb0da24b60315cfd3e9b8f929ffef4400a882b11f5e`
+
+### 4.4 Hosted Deployment — COMPLETE
 
 **Priority:** 🟡 Must-have  
-**Estimated effort:** 0.5 days  
-**Status:** In progress
+**Estimated effort:** Complete  
+**Status:** Complete
 
 From ROADMAP: *"The project must be testable via hosted deployment or local setup instructions."*
 
 - [x] Add Vercel serverless runtime and deployment config
-- [x] Launch hosted frontend preview
-- [ ] Verify the latest production flow end-to-end in hosted mode
-- [ ] Include the final deployment URL in submission materials
+- [x] Launch hosted frontend production deployment
+- [x] Verify the latest production flow end-to-end in hosted mode
+- [x] Include the final deployment URL in submission materials
+
+**Hosted URL:** `https://dot-pilot.vercel.app`
 
 ### 4.5 Demo Video — IMPORTANT
 
@@ -342,19 +351,19 @@ From PRD Section 13 and ROADMAP Section 9.5:
 | Date | ROADMAP Plan | Actual Status |
 |---|---|---|
 | **Mar 11** | Freeze scope, finalize positioning | ✅ Done — scope frozen, README published |
-| **Mar 12** | Clean architecture, define contract interface | ⏳ Tomorrow |
+| **Mar 12** | Clean architecture, define contract interface | ✅ Done |
 | **Mar 13** | Build wallet and dashboard baseline | ✅ Done ahead of schedule |
 | **Mar 14** | Build strategy explorer and assistant baseline | ✅ Done ahead of schedule |
 | **Mar 15** | Build vault contract and vault page baseline | ✅ Done |
 | **Mar 16** | Connect frontend to contract | ✅ Done |
-| **Mar 17** | Complete end-to-end product flow | ⚠️ Awaiting deployed contract address for final hosted proof |
+| **Mar 17** | Complete end-to-end product flow | ✅ Completed early (hosted on-chain flow already proven) |
 | **Mar 18** | Stability, cleanup, UX polish | ⏳ Pending |
 | **Mar 19** | Submission packaging | ⏳ Pending |
 | **Mar 20** | **SUBMISSION DEADLINE** | ⏳ Pending |
 | **Mar 21–23** | Demo day preparation | ⏳ Pending |
 | **Mar 24–25** | Demo day execution | ⏳ Pending |
 
-**Key insight:** Frontend and contract integration both landed ahead of the remaining deployment-proof work, so the critical path is now deployment evidence rather than implementation scope.
+**Key insight:** Core product + contract + hosted runtime are all complete. The main remaining path is submission packaging (video + pitch deck).
 
 ---
 
@@ -363,10 +372,10 @@ From PRD Section 13 and ROADMAP Section 9.5:
 | Risk | Severity | Current Status | Mitigation |
 |---|---|---|---|
 | Contract integration slips too late | 🔴 Critical | ✅ Mitigated | Frontend now calls the vault contract through MetaMask when configured |
-| Demo looks like a static prototype | 🔴 Critical | 🟡 Medium — deployed proof still pending | Configure the live contract address and record one hosted transaction |
+| Demo looks like a static prototype | 🔴 Critical | ✅ Mitigated | Hosted app now shows live contract status and real on-chain transaction results |
 | AI feels generic | 🟢 Low | ✅ Mitigated | Responses grounded in curated data, actionable CTAs |
 | Scope keeps growing | 🟢 Low | ✅ Mitigated | MVP frozen, extras in post-hackathon parking lot |
-| Submission package incomplete | 🟡 Medium | ⏳ In Progress | README done; video, deployment, and pitch deck remaining |
+| Submission package incomplete | 🟡 Medium | ⏳ In Progress | Technical proof complete; video and pitch deck still pending |
 
 ---
 
@@ -379,9 +388,9 @@ From PRD Section 13 and ROADMAP Section 9.5:
 | 1 | Public GitHub repository | ✅ github.com/panzauto46-bot/DotPilot |
 | 2 | Project description | ✅ README with professional documentation |
 | 3 | Clean README with setup instructions | ✅ 800 lines with architecture diagrams, deployment docs, and contract commands |
-| 4 | Hosted frontend or local install guide | ⚠️ Local guide ✅ / Hosted preview ✅ / Final hosted QA pending |
-| 5 | Demo video or screenshots | ❌ Not created |
-| 6 | Contract address | ❌ No contract deployed |
+| 4 | Hosted frontend or local install guide | ✅ Hosted production URL + local guide |
+| 5 | Demo video or screenshots | ⚠️ Screenshots captured, video pending |
+| 6 | Contract address | ✅ `0x49Ee39851956df07E5d3B430dC91e5A00B7E6059` |
 
 ### Strongly Recommended Items
 
@@ -389,8 +398,8 @@ From PRD Section 13 and ROADMAP Section 9.5:
 |---|---|---|
 | 7 | Pitch deck | ❌ Not created |
 | 8 | Architecture overview | ✅ System architecture diagram in README |
-| 9 | Transaction proof | ❌ No contract deployed |
-| 10 | Screenshots for fallback demo | ❌ Not captured |
+| 9 | Transaction proof | ✅ Deploy + deposit + withdraw tx hashes documented |
+| 10 | Screenshots for fallback demo | ✅ Captured |
 | 11 | OpenZeppelin usage documentation | ✅ Documented in contract + README |
 
 ### Internal Quality Checks
@@ -402,7 +411,7 @@ From PRD Section 13 and ROADMAP Section 9.5:
 | 14 | All links open correctly | ✅ |
 | 15 | Build command works | ✅ |
 
-**Current score: 6 of 11 required/recommended items completed, with hosted preview, deployment docs, and contract baseline now in place.**
+**Current score: 9 of 11 required/recommended items completed, with only video and pitch deck remaining.**
 
 ---
 
@@ -412,19 +421,19 @@ DotPilot is ready for submission when **all** of the following are true:
 
 | # | Requirement | Met? |
 |---|---|---|
-| 1 | Project clearly fits Track 1 — EVM Smart Contract | ⚠️ Contract baseline exists; target deployment pending |
+| 1 | Project clearly fits Track 1 — EVM Smart Contract | ✅ Live deployed contract on Polkadot Hub EVM testnet |
 | 2 | Repository is public and open-source | ✅ |
 | 3 | Commit history reflects active hackathon work | ✅ |
 | 4 | App can run locally from the README | ✅ |
-| 5 | A hosted version is available | ⚠️ Preview deployed; final verification pending |
+| 5 | A hosted version is available | ✅ Production hosted app verified |
 | 6 | Wallet connection works | ✅ |
 | 7 | User can view strategies | ✅ |
 | 8 | AI assistant can recommend at least one usable strategy | ✅ |
-| 9 | User can complete at least one contract-backed action | ⚠️ Code path complete; hosted proof pending deployed address |
-| 10 | Project can be shown in a clean 2–3 minute demo | ⚠️ Final polish depends on deployed contract proof |
-| 11 | Demo video and screenshots are prepared | ❌ |
+| 9 | User can complete at least one contract-backed action | ✅ On-chain deposit and withdraw confirmed |
+| 10 | Project can be shown in a clean 2–3 minute demo | ✅ Core flow is stable on hosted runtime |
+| 11 | Demo video and screenshots are prepared | ⚠️ Screenshots ready, video pending |
 
-**Score: 7 of 11 requirements met, with deployment proof now the main missing requirement.**
+**Score: 10 of 11 requirements met, with demo video as the primary missing item.**
 
 ---
 
@@ -434,7 +443,7 @@ If time becomes limited, work in this order:
 
 | Priority | Item | Status | Estimated Effort |
 |---|---|---|---|
-| 1 | Contract deployment | ❌ Not started | 1–2 days |
+| 1 | Contract deployment | ✅ Done | — |
 | 2 | Wallet connection | ✅ Done | — |
 | 3 | Deposit flow from frontend to contract | ✅ Done | — |
 | 4 | AI recommendation tied to real strategy | ✅ Done | — |
@@ -444,7 +453,7 @@ If time becomes limited, work in this order:
 | 8 | UI polish | ✅ Mostly done | 0.5 days |
 | 9 | Extra analytics | ⏭️ Skip for MVP | — |
 
-**Priority item 1 is now the main blocker for hackathon completion.**
+**Critical blockers are now non-code: demo video and pitch deck packaging.**
 
 ---
 
@@ -468,32 +477,22 @@ If time becomes limited, work in this order:
 
 ```
 ┌──────────────────────────┐
-│    BLOCKING ITEM:        │
-│    Target-Network Vault  │
-│    Deployment Proof      │
-│    (NOT YET CAPTURED)    │
+│   CORE RUNTIME: DONE     │
+│   • Contract deployed    │
+│   • Hosted flow verified │
+│   • On-chain tx proven   │
 └────────────┬─────────────┘
              │
-    ┌────────┼────────┐
-    │        │        │
-    ▼        ▼        ▼
-Hosted App  Contract  Submission
-↔ Vault     Deploy    Evidence
-Config      Proof     Packaging
-    │        │        │
-    └────────┼────────┘
-             │
              ▼
-    ┌────────────────┐
-    │  THEN:         │
-    │  • Deploy app  │
-    │  • Record video│
-    │  • Pitch deck  │
-    │  • Submit      │
-    └────────────────┘
+┌──────────────────────────┐
+│   REMAINING CRITICAL:    │
+│   • Demo video           │
+│   • Pitch deck           │
+│   • Final form submit    │
+└──────────────────────────┘
 ```
 
-**One sentence:** Deployment proof for the integrated vault contract is now the single item separating this project from being submission-ready.
+**One sentence:** DotPilot is technically submission-ready; only media and packaging tasks remain.
 
 ---
 
@@ -584,7 +583,9 @@ DotPilot/
     ├── data/
     │   └── mockData.ts     3.4 KB    Curated mock data
     ├── services/
-    │   └── assistant.ts    1.7 KB    AI client request helpers
+    │   ├── assistant.ts    1.7 KB    AI client request helpers
+    │   ├── evmProvider.ts  773 B     Injected wallet provider selection helper
+    │   └── vault.ts        11.9 KB   Contract runtime, chain handling, vault calls
     └── utils/
         ├── assistantFallback.ts  4.6 KB Local deterministic AI fallback
         ├── cn.ts           169 B     Class name utility
@@ -593,4 +594,4 @@ DotPilot/
 
 ---
 
-*Generated on March 11, 2026. This document reflects the project state at the time of writing and should be updated as work progresses toward the March 20 submission deadline.*
+*Generated on March 12, 2026. This document reflects the current project runtime status and should be updated as demo assets are completed before the March 20 submission deadline.*

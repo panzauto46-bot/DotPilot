@@ -1,8 +1,8 @@
 # DotPilot Hackathon Roadmap
 
 **Based on:** [PRD.md](/media/pandudargah/New%20Volume/Dotpilot/PRD.md)  
-**Status:** Execution Draft  
-**Current Date:** March 11, 2026  
+**Status:** Execution Active (Technical Scope Complete)  
+**Current Date:** March 12, 2026  
 **Submission Deadline:** March 20, 2026  
 **Demo Days:** March 24-25, 2026  
 **Primary Track:** Track 1 - EVM Smart Contract  
@@ -25,29 +25,24 @@ This is a hackathon roadmap, not a long-term startup roadmap. It is intentionall
 
 ## 1.1 Execution Status
 
-### Updated: March 11, 2026
+### Updated: March 12, 2026
 
-Frontend MVP progress completed in the current codebase:
+Core technical scope now completed in the current codebase:
 
-- Shared app state for wallet connection, selected strategy, vault positions, and activity feed
-- Wallet modal updated for MetaMask and demo-wallet flow
-- Dashboard, strategy explorer, AI assistant, vault, and portfolio now use connected state
-- New animated landing page added for the disconnected entry experience
-- Landing page now includes a 3D-style hero, running background flow, and professional hackathon positioning
-- Sidebar now clearly locks assistant, strategies, portfolio, and vault features until wallet connection
-- AI assistant recommendations now route into a real strategy selection flow
-- Deposit and withdraw actions now update portfolio and vault state in-app
-- Portfolio and vault access are now gated behind wallet connection
-- Header notifications now reflect in-app wallet and vault activity
+- Frontend MVP flow is complete (landing, dashboard, AI assistant, strategies, vault, portfolio)
+- Solidity vault contract implemented with OpenZeppelin security modules
+- Frontend wired to live contract runtime via MetaMask
+- Contract deployed to Polkadot Hub EVM testnet
+- On-chain deposit and withdraw execution successfully validated
+- Hosted Vercel runtime active with production environment variables
+- AI runtime live with Qwen model fallback and deterministic local fallback
+- README and status documents synchronized with deployment/runtime details
 
 Still remaining for full hackathon completion:
 
-- Solidity vault contract implementation
-- Frontend to real contract integration
-- Contract deployment proof
-- README polish
-- Hosted deployment
-- Demo video and pitch deck
+- Record final demo video (<= 3 minutes)
+- Finalize pitch deck
+- Finish submission packaging in DoraHacks form
 
 ## 2. Submission Strategy
 
@@ -651,31 +646,25 @@ Outputs:
 
 ## 11. Priority Order
 
-If time becomes limited, build in this order:
+If time becomes limited, close work in this order:
 
-1. Contract deployment
-2. Wallet connection
-3. Deposit flow from frontend to contract
-4. AI recommendation tied to a real strategy
-5. Dashboard and strategy explorer
-6. Withdraw flow
-7. Position tracking
-8. UI polish
-9. Extra analytics
+1. Demo video recording
+2. Pitch deck completion
+3. Submission form packaging and proof links
+4. UI polish for presentation clarity
+5. Extra analytics
 
-This order protects the technical core and keeps the demo credible.
+The technical core is already complete, so this order protects judging clarity and submission completeness.
 
 ## 12. Critical Path
 
-The project is blocked if any of these fail:
+The project is now blocked only if these fail:
 
-- The contract is not deployed
-- Wallet is not connected properly
-- The vault UI cannot call the contract
-- The AI recommendation does not map to a real strategy
-- README and demo assets are not ready in time
+- Demo video is not prepared before submission
+- Pitch deck is not ready for Demo Days
+- Submission links (repo, app, contract address, tx proofs) are incomplete
 
-These should receive the most team attention.
+These should receive the most team attention in the final days.
 
 ## 13. Definition of Done for the Hackathon MVP
 
@@ -817,10 +806,8 @@ These items are intentionally deferred and should not disturb MVP execution:
 
 ## 18. Immediate Next Actions
 
-1. Confirm DotPilot will be submitted to Track 1 - EVM Smart Contract.
-2. Freeze the final MVP scope from Section 6.
-3. Initialize or fix the Git repository so commit history is valid.
-4. Define the first supported strategy and vault contract interface.
-5. Lock the exact OpenZeppelin modules that will be used in the vault contract.
-6. Convert Sections 9 and 10 into a daily task board.
-7. Decide the exact demo script now, before adding more features.
+1. Record and upload final demo video (connect wallet -> AI -> deposit -> withdraw -> portfolio update).
+2. Finalize 5-10 slide pitch deck for Demo Days.
+3. Keep hosted deployment and environment variables unchanged for judging stability.
+4. Verify all submission links: GitHub repo, hosted app URL, contract address, transaction proofs.
+5. Submit final DoraHacks entry before the March 20, 2026 deadline.
