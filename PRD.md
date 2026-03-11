@@ -190,6 +190,52 @@ Example flow:
 - Smart contract transactions
 - On-chain asset management
 
+### System Architecture Flow
+
+DotPilot is designed as a layered product:
+
+1. Presentation Layer
+   - Dashboard
+   - AI assistant
+   - Strategy explorer
+   - Vault execution interface
+2. Application Layer
+   - Wallet state management
+   - Strategy selection flow
+   - Portfolio and position state
+   - Transaction feedback handling
+3. Intelligence Layer
+   - AI recommendation logic
+   - Risk explanation
+   - Curated opportunity analysis
+4. Blockchain Layer
+   - Wallet provider connection
+   - Solidity vault contract
+   - On-chain execution and event handling
+
+### Current Project Architecture Direction
+
+The project should be kept modular and professional with the following structure:
+
+- `src/components`
+  - presentation components and page-level UI
+- `src/data`
+  - curated mock or static strategy datasets
+- `src/types`
+  - shared TypeScript models
+- `src/utils`
+  - reusable helper functions and formatting logic
+- `src/App.tsx`
+  - top-level app flow and shared state orchestration
+
+Architecture principles:
+
+- Keep business flow centralized at the app level
+- Keep components focused on presentation and user interaction
+- Keep shared types explicit and reusable
+- Keep utility logic outside component files when reused
+- Separate future blockchain integration logic cleanly from UI rendering
+
 ## 9. Polkadot Ecosystem Integration
 
 DotPilot leverages several features of the Polkadot ecosystem:
