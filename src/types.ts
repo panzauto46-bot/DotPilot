@@ -27,6 +27,8 @@ export interface ChatMessage {
   timestamp: Date;
   strategyId?: string;
   ctaLabel?: string;
+  modelUsed?: string;
+  source?: 'live' | 'fallback';
 }
 
 export interface VaultPosition {

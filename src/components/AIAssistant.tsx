@@ -1,21 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Send, Bot, User, Sparkles, Lightbulb } from 'lucide-react';
 import { ChatMessage, DefiOpportunity } from '../types';
+import { requestAssistantReply } from '../services/assistant';
 import { cn } from '../utils/cn';
-
-interface AIAssistantProps {
-  walletConnected: boolean;
-  opportunities: DefiOpportunity[];
-  totalPortfolioValue: number;
-  onOpenStrategy: (strategyId: string) => void;
-  onConnectWallet: () => void;
-}
-
-interface AssistantReply {
-  content: string;
-  strategyId?: string;
-  ctaLabel?: string;
-}
+import { buildAssistantReply } from '../utils/assistantFallback';
 
 function createMessage(partial: Omit<ChatMessage, 'id' | 'timestamp'>): ChatMessage {
   return {
@@ -28,96 +16,12 @@ function createMessage(partial: Omit<ChatMessage, 'id' | 'timestamp'>): ChatMess
   };
 }
 
-function pickBestLowRiskStaking(opportunities: DefiOpportunity[]) {
-  return opportunities
-    .filter((opportunity) => opportunity.type === 'Staking' && opportunity.risk === 'Low')
-    .sort((left, right) => right.apy - left.apy)[0];
-}
-
-function pickBestYield(opportunities: DefiOpportunity[]) {
-  return [...opportunities].sort((left, right) => right.apy - left.apy)[0];
-}
-
-function pickBalancedOpportunity(opportunities: DefiOpportunity[]) {
-  return opportunities
-    .filter((opportunity) => opportunity.recommended)
-    .sort((left, right) => right.apy - left.apy)[0];
-}
-
-function buildAssistantReply(
-  input: string,
-  walletConnected: boolean,
-  opportunities: DefiOpportunity[],
-  totalPortfolioValue: number
-): AssistantReply {
-  const lowerInput = input.toLowerCase();
-
-  if (lowerInput.includes('stake')) {
-    const strategy = pickBestLowRiskStaking(opportunities);
-    if (!strategy) {
-      return {
-        content: 'I could not find a low-risk staking strategy in the current dataset.',
-      };
-    }
-
-    return {
-      content: walletConnected
-        ? `For staking, my top pick is **${strategy.protocol}**.\n\nIt offers **${strategy.apy}% APY**, keeps risk at **${strategy.risk}**, and fits a portfolio sized around **$${totalPortfolioValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}**.\n\nIf you want the safest path into the vault flow, start here.`
-        : `For staking, my top pick is **${strategy.protocol}**.\n\nIt offers **${strategy.apy}% APY** with **${strategy.risk}** risk.\n\nConnect your wallet and I will take you straight into the vault flow for this strategy.`,
-      strategyId: strategy.id,
-      ctaLabel: walletConnected ? 'Open strategy' : 'Connect wallet',
-    };
-  }
-
-  if (lowerInput.includes('yield') || lowerInput.includes('best') || lowerInput.includes('apy')) {
-    const strategy = pickBestYield(opportunities);
-    if (!strategy) {
-      return {
-        content: 'I could not find a yield strategy in the current dataset.',
-      };
-    }
-
-    return {
-      content: walletConnected
-        ? `The highest-yield option right now is **${strategy.protocol}** at **${strategy.apy}% APY**.\n\nThis comes with **${strategy.risk}** risk, so I would only use it if you are comfortable with a more aggressive position.\n\nI can route you into the vault flow if you want to test the opportunity.`
-        : `The highest-yield option right now is **${strategy.protocol}** at **${strategy.apy}% APY**.\n\nIt carries **${strategy.risk}** risk. Connect your wallet if you want to continue into the vault flow.`,
-      strategyId: strategy.id,
-      ctaLabel: walletConnected ? 'Review in vault' : 'Connect wallet',
-    };
-  }
-
-  if (
-    lowerInput.includes('passive') ||
-    lowerInput.includes('income') ||
-    lowerInput.includes('safe') ||
-    lowerInput.includes('risk')
-  ) {
-    const strategy = pickBalancedOpportunity(opportunities);
-    if (!strategy) {
-      return {
-        content: 'I could not find a balanced strategy in the current dataset.',
-      };
-    }
-
-    return {
-      content: walletConnected
-        ? `For passive income, I would start with **${strategy.protocol}**.\n\nIt balances yield and clarity with **${strategy.apy}% APY** and **${strategy.risk}** risk.\n\nThis is the most practical option for the DotPilot MVP flow.`
-        : `For passive income, I would start with **${strategy.protocol}**.\n\nIt offers **${strategy.apy}% APY** with **${strategy.risk}** risk and is a good entry point for the demo flow.\n\nConnect your wallet to continue.`,
-      strategyId: strategy.id,
-      ctaLabel: walletConnected ? 'Start vault flow' : 'Connect wallet',
-    };
-  }
-
-  const fallback = pickBalancedOpportunity(opportunities);
-
-  return {
-    content: walletConnected
-      ? `I can help you compare staking, yield, and passive income strategies.\n\nA good place to start is **${fallback?.protocol ?? 'the recommended opportunity set'}**.\n\nAsk for staking, yield, or low-risk income and I will point you to the right strategy.`
-      : `I can compare staking, yield, and passive income strategies for you.\n\nConnect your wallet when you want a smoother vault flow and more context around execution.`,
-    strategyId: fallback?.id,
-    ctaLabel:
-      fallback && walletConnected ? 'Open recommended strategy' : walletConnected ? undefined : 'Connect wallet',
-  };
+interface AIAssistantProps {
+  walletConnected: boolean;
+  opportunities: DefiOpportunity[];
+  totalPortfolioValue: number;
+  onOpenStrategy: (strategyId: string) => void;
+  onConnectWallet: () => void;
 }
 
 export function AIAssistant({
@@ -136,9 +40,16 @@ export function AIAssistant({
   ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [assistantStatus, setAssistantStatus] = useState<{
+    mode: 'live' | 'fallback';
+    label: string;
+  }>({
+    mode: 'fallback',
+    label: 'Fallback ready',
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<number | null>(null);
   const previousWalletStateRef = useRef(walletConnected);
+  const requestControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -161,13 +72,11 @@ export function AIAssistant({
 
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) {
-        window.clearTimeout(timeoutRef.current);
-      }
+      requestControllerRef.current?.abort();
     };
   }, []);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim() || isTyping) return;
 
     const userInput = input.trim();
@@ -180,25 +89,76 @@ export function AIAssistant({
     setInput('');
     setIsTyping(true);
 
-    timeoutRef.current = window.setTimeout(() => {
-      const reply = buildAssistantReply(
-        userInput,
-        walletConnected,
-        opportunities,
-        totalPortfolioValue
+    requestControllerRef.current?.abort();
+    const requestController = new AbortController();
+    requestControllerRef.current = requestController;
+
+    try {
+      const reply = await requestAssistantReply(
+        {
+          input: userInput,
+          walletConnected,
+          totalPortfolioValue,
+          opportunities,
+        },
+        requestController.signal
       );
+
+      setAssistantStatus({
+        mode: 'live',
+        label: reply.model
+          ? `Live AI · ${reply.model}${reply.fallbackUsed ? ' (auto-switch)' : ''}`
+          : 'Live AI',
+      });
 
       setMessages((current) => [
         ...current,
         createMessage({
           role: 'assistant',
           content: reply.content,
-          strategyId: reply.strategyId,
-          ctaLabel: reply.ctaLabel,
+          strategyId: reply.strategyId ?? undefined,
+          ctaLabel: reply.ctaLabel ?? undefined,
+          modelUsed: reply.model ?? undefined,
+          source: 'live',
         }),
       ]);
+    } catch (error) {
+      if (requestController.signal.aborted) {
+        return;
+      }
+
+      const fallbackReply = buildAssistantReply(
+        userInput,
+        walletConnected,
+        opportunities,
+        totalPortfolioValue
+      );
+
+      const message =
+        error instanceof Error ? error.message : 'Live AI unavailable. Switched to local fallback.';
+
+      setAssistantStatus({
+        mode: 'fallback',
+        label: `Fallback active · ${message}`,
+      });
+
+      setMessages((current) => [
+        ...current,
+        createMessage({
+          role: 'assistant',
+          content: fallbackReply.content,
+          strategyId: fallbackReply.strategyId,
+          ctaLabel: fallbackReply.ctaLabel,
+          source: 'fallback',
+        }),
+      ]);
+    } finally {
+      if (requestControllerRef.current === requestController) {
+        requestControllerRef.current = null;
+      }
+
       setIsTyping(false);
-    }, 900);
+    }
   };
 
   const quickActions = [
@@ -231,12 +191,31 @@ export function AIAssistant({
         <div>
           <h2 className="text-lg font-semibold text-white">DotPilot AI Assistant</h2>
           <p className="text-xs text-surface-300">
-            Grounded recommendations for the current DeFi strategy set
+            Real Qwen responses grounded to the current DotPilot strategy set
           </p>
         </div>
-        <div className="ml-auto flex items-center gap-1.5 rounded-full border border-green-500/20 bg-green-500/10 px-2.5 py-1">
-          <div className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-[10px] font-medium text-green-400">Ready</span>
+        <div
+          className={cn(
+            'ml-auto flex items-center gap-1.5 rounded-full px-2.5 py-1',
+            assistantStatus.mode === 'live'
+              ? 'border border-green-500/20 bg-green-500/10'
+              : 'border border-yellow-500/20 bg-yellow-500/10'
+          )}
+        >
+          <div
+            className={cn(
+              'h-1.5 w-1.5 rounded-full animate-pulse',
+              assistantStatus.mode === 'live' ? 'bg-green-400' : 'bg-yellow-400'
+            )}
+          />
+          <span
+            className={cn(
+              'text-[10px] font-medium',
+              assistantStatus.mode === 'live' ? 'text-green-400' : 'text-yellow-300'
+            )}
+          >
+            {assistantStatus.mode === 'live' ? assistantStatus.label : 'Local fallback'}
+          </span>
         </div>
       </div>
 
@@ -284,6 +263,16 @@ export function AIAssistant({
                   hour: '2-digit',
                   minute: '2-digit',
                 })}
+                {message.role === 'assistant' && (
+                  <>
+                    {' · '}
+                    {message.source === 'live' && message.modelUsed
+                      ? message.modelUsed
+                      : message.source === 'fallback'
+                        ? 'Local fallback'
+                        : 'DotPilot'}
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -312,7 +301,9 @@ export function AIAssistant({
           {quickActions.map((action) => (
             <button
               key={action.label}
-              onClick={() => setInput(action.label)}
+              onClick={() => {
+                setInput(action.label);
+              }}
               className="flex items-center gap-1.5 rounded-lg border border-surface-600 bg-surface-700 px-3 py-2 text-xs text-surface-200 transition-colors hover:border-dot-pink/30 hover:text-white"
             >
               {action.icon}
@@ -327,12 +318,16 @@ export function AIAssistant({
           type="text"
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          onKeyDown={(event) => event.key === 'Enter' && handleSend()}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
+              void handleSend();
+            }
+          }}
           placeholder="Ask about staking, yields, or passive income..."
           className="flex-1 rounded-xl border border-surface-600 bg-surface-700 px-4 py-3 text-sm text-white placeholder-surface-400 transition-colors focus:border-dot-pink/50 focus:outline-none"
         />
         <button
-          onClick={handleSend}
+          onClick={() => void handleSend()}
           disabled={!input.trim() || isTyping}
           className={cn(
             'flex items-center justify-center rounded-xl px-4 transition-all',
