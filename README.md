@@ -39,7 +39,7 @@
 
 **DotPilot** is an AI-powered DeFi navigation dapp built for the **Polkadot Solidity Hackathon** on [DoraHacks](https://dorahacks.io).
 
-Instead of forcing users to jump between fragmented DeFi tools, DotPilot combines **strategy discovery**, **AI-guided recommendations**, and a **vault execution flow** into one polished product experience. The current MVP already ships a production-ready frontend, live AI runtime, and hosted deployment path, while the Solidity vault contract remains the main work in progress for the hackathon submission.
+Instead of forcing users to jump between fragmented DeFi tools, DotPilot combines **strategy discovery**, **AI-guided recommendations**, and a **vault execution flow** into one polished product experience. The current MVP already ships a production-ready frontend, live AI runtime, hosted deployment path, and a compile-tested Solidity vault baseline, while target-network deployment and frontend contract integration remain the main work in progress for the hackathon submission.
 
 ### The Problem
 
@@ -84,7 +84,7 @@ Ask questions like *"Where should I stake my DOT?"* and receive **grounded recom
     <td width="50%">
 
 ### 🏦 Smart Vault
-Use a vault-ready deposit and withdraw flow that mirrors the intended product UX. The current MVP simulates vault actions in-app while the Solidity contract and on-chain execution layer are still being implemented.
+Use a vault-ready deposit and withdraw flow that mirrors the intended product UX. A local Solidity vault baseline now exists with tested deposit and withdraw logic, while the frontend still simulates those actions until on-chain integration is completed.
 
 </td>
     <td width="50%">
@@ -262,6 +262,7 @@ Represents the planned execution boundary for EVM-compatible smart contracts.
 |---|---|
 | Solidity `^0.8.x` | Smart contract language |
 | OpenZeppelin Contracts | Security primitives (AccessControl, ReentrancyGuard, Pausable) |
+| Ethers | Deployment and integration client |
 | Polkadot Hub (EVM) | Deployment target |
 
 ### Development Tools
@@ -270,6 +271,8 @@ Represents the planned execution boundary for EVM-compatible smart contracts.
 |---|---|
 | vite-plugin-singlefile | Bundle entire app into single HTML file |
 | ESLint + TypeScript strict mode | Code quality enforcement |
+| solc | Local Solidity compilation |
+| Ganache + Node test runner | Local contract testing |
 | Git | Version control |
 
 ---
@@ -304,14 +307,24 @@ dotpilot/
 │   ├── assistant.mjs                # Live AI chat handler
 │   └── health.mjs                   # AI runtime readiness check
 │
+├── 📁 contracts/
+│   ├── DotPilotVault.sol            # Vault baseline with roles, rewards, withdraw flow
+│   └── 📁 mocks/
+│       └── MockERC20.sol            # ERC20 test token for local contract tests
+│
 ├── 📁 lib/
 │   └── assistant-runtime.mjs        # Shared Qwen routing, validation, failover logic
 │
 ├── 📁 scripts/
+│   ├── compile-contracts.mjs        # Local Solidity compiler and artifact writer
+│   ├── deploy-vault.mjs             # RPC-based vault deployment script
 │   └── dev.mjs                      # Runs frontend and local AI server together
 │
 ├── 📁 server/
 │   └── index.mjs                    # Local Node runtime for production preview and AI API
+│
+├── 📁 test/
+│   └── DotPilotVault.test.mjs       # Native + ERC20 vault contract tests
 │
 └── 📁 src/                          # Application source code
     │
@@ -567,6 +580,8 @@ cp .env.example .env
 
 Set `DASHSCOPE_API_KEY` in `.env` if you want live Qwen responses locally. Without it, the assistant still works through the deterministic local fallback.
 
+Set `POLKADOT_HUB_RPC_URL` and `DEPLOYER_PRIVATE_KEY` only when you are ready to deploy the vault contract to a real EVM RPC.
+
 ### Development
 
 ```bash
@@ -598,6 +613,12 @@ npm run build
 
 # Serve the built app with the local Node runtime
 npm run start
+
+# Compile Solidity contracts
+npm run contracts:compile
+
+# Run local vault contract tests
+npm run contracts:test
 ```
 
 ### Build Output
@@ -632,6 +653,16 @@ The hosted app expects these endpoints:
 
 For local Node usage, `server/index.mjs` serves the same assistant API and exposes both `/health` and `/api/health` for parity.
 
+### Deploy the Vault Contract
+
+After setting `POLKADOT_HUB_RPC_URL`, `DEPLOYER_PRIVATE_KEY`, and optionally `VAULT_ADMIN_ADDRESS` in `.env`, run:
+
+```bash
+npm run contracts:deploy
+```
+
+The deployment script writes the latest deployment metadata to `deployments/dotpilot-vault.latest.json`.
+
 ### Alternative: Static Hosting
 
 Since the build produces a single HTML file, you can also host the frontend on:
@@ -663,8 +694,9 @@ If you choose static-only hosting, the live AI endpoints must be hosted separate
 
 ### 🔄 Phase 2 — Smart Contract Integration (In Progress)
 
-- [ ] Solidity vault contract (deposit, withdraw, events)
-- [ ] OpenZeppelin security modules (AccessControl, ReentrancyGuard, Pausable)
+- [x] Solidity vault contract baseline (deposit, withdraw, events)
+- [x] OpenZeppelin security modules (AccessControl, ReentrancyGuard, Pausable)
+- [x] Core local contract tests
 - [ ] Contract deployment on Polkadot Hub compatible testnet
 - [ ] Frontend-to-contract integration
 - [ ] Transaction hash proof of execution

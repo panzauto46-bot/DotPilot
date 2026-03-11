@@ -9,7 +9,10 @@
     "dev:api": "node --env-file-if-exists=.env server/index.mjs",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node --env-file-if-exists=.env server/index.mjs"
+    "start": "node --env-file-if-exists=.env server/index.mjs",
+    "contracts:compile": "node scripts/compile-contracts.mjs",
+    "contracts:test": "node --test test/**/*.test.mjs",
+    "contracts:deploy": "node --env-file-if-exists=.env scripts/deploy-vault.mjs"
   },
   "dependencies": {
     "clsx": "2.1.1",
@@ -20,11 +23,15 @@
     "tailwind-merge": "3.4.0"
   },
   "devDependencies": {
+    "@openzeppelin/contracts": "^5.6.1",
     "@tailwindcss/vite": "4.1.17",
     "@types/node": "^22.0.0",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "5.1.1",
+    "ethers": "^6.16.0",
+    "ganache": "^7.9.2",
+    "solc": "^0.8.34",
     "tailwindcss": "4.1.17",
     "typescript": "5.9.3",
     "vite": "7.2.4",
